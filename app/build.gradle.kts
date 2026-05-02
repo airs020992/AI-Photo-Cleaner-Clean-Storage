@@ -28,6 +28,7 @@ android {
 dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:permissions"))
+    implementation(project(":data:media"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:scan"))
@@ -43,6 +44,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.coroutines.android)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)

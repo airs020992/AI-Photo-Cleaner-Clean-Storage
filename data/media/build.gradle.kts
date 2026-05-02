@@ -14,7 +14,11 @@ android {
 }
 
 dependencies {
+    implementation(project(":domain:cleaning"))
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.coroutines.android)
     ksp(libs.room.compiler)
+
+    testImplementation(libs.junit)
 }

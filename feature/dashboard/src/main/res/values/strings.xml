@@ -1,6 +1,8 @@
 <resources>
     <string name="dashboard_summary_label">You can free up</string>
+    <string name="dashboard_summary_scanning">Scanning media library</string>
     <string name="dashboard_scanned_items_preview">12,480 items scanned</string>
+    <string name="dashboard_scanned_items_dynamic">%1$s items scanned</string>
     <string name="dashboard_chip_safe_preview">Safe preview</string>
     <string name="dashboard_section_biggest_wins">Start with the biggest wins</string>
     <string name="dashboard_footer_trust">You review everything before deleting. Premium and ads appear only after useful scan results.</string>
@@ -16,4 +18,5 @@
     <string name="category_blurry_photos_subtitle">Check low-quality images manually</string>
     <string name="action_open">Open</string>
     <string name="action_review">Review</string>
+    <string name="scan_size_zero">0 MB</string>
 </resources>
