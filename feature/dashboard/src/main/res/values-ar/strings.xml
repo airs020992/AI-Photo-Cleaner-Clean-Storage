@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_summary_label">يمكنك توفير</string>
+    <string name="dashboard_scanned_items_preview">تم فحص 12,480 عنصرًا</string>
+    <string name="dashboard_chip_safe_preview">معاينة آمنة</string>
+    <string name="dashboard_section_biggest_wins">ابدأ بأكبر فرص التوفير</string>
+    <string name="dashboard_footer_trust">تراجع كل شيء قبل الحذف. تظهر ميزات Premium والإعلانات فقط بعد نتائج فحص مفيدة.</string>
+    <string name="category_large_videos_title">مقاطع فيديو كبيرة</string>
+    <string name="category_large_videos_subtitle">اضغط أو احذف أكبر الملفات أولاً</string>
+    <string name="category_similar_photos_title">صور متشابهة</string>
+    <string name="category_similar_photos_subtitle">اختر أفضل لقطة من اللحظات المتكررة</string>
+    <string name="category_duplicate_photos_title">صور مكررة</string>
+    <string name="category_duplicate_photos_subtitle">راجع النسخ المطابقة قبل الحذف</string>
+    <string name="category_screenshots_title">لقطات الشاشة</string>
+    <string name="category_screenshots_subtitle">نظّف اللقطات القديمة التي لم تعد تحتاجها</string>
+    <string name="category_blurry_photos_title">صور غير واضحة</string>
+    <string name="category_blurry_photos_subtitle">راجع الصور منخفضة الجودة يدويًا</string>
+    <string name="action_open">فتح</string>
+    <string name="action_review">مراجعة</string>
+</resources>

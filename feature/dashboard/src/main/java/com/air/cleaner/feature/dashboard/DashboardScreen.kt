@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,7 +43,7 @@ fun DashboardScreen(
         )
 
         Text(
-            text = "Start with the biggest wins",
+            text = stringResource(R.string.dashboard_section_biggest_wins),
             style = MaterialTheme.typography.titleMedium,
         )
 
@@ -57,7 +58,7 @@ fun DashboardScreen(
         }
 
         Text(
-            text = "You review everything before deleting. Premium and ads appear only after useful scan results.",
+            text = stringResource(R.string.dashboard_footer_trust),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -80,7 +81,7 @@ private fun StorageSummary(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "You can free up",
+                text = stringResource(R.string.dashboard_summary_label),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
@@ -99,11 +100,57 @@ private fun StorageSummary(
                 )
                 AssistChip(
                     onClick = {},
-                    label = { Text("Safe preview") },
+                    label = { Text(stringResource(R.string.dashboard_chip_safe_preview)) },
                 )
             }
         }
     }
+}
+
+@Composable
+fun localizedPreviewCleanupCategories(): List<CleanupCategory> {
+    return listOf(
+        CleanupCategory(
+            id = "large_videos",
+            title = stringResource(R.string.category_large_videos_title),
+            subtitle = stringResource(R.string.category_large_videos_subtitle),
+            recoverableLabel = "5.2 GB",
+            actionLabel = stringResource(R.string.action_open),
+            priority = CleanupPriority.High,
+        ),
+        CleanupCategory(
+            id = "similar_photos",
+            title = stringResource(R.string.category_similar_photos_title),
+            subtitle = stringResource(R.string.category_similar_photos_subtitle),
+            recoverableLabel = "3.4 GB",
+            actionLabel = stringResource(R.string.action_review),
+            priority = CleanupPriority.High,
+        ),
+        CleanupCategory(
+            id = "duplicate_photos",
+            title = stringResource(R.string.category_duplicate_photos_title),
+            subtitle = stringResource(R.string.category_duplicate_photos_subtitle),
+            recoverableLabel = "1.8 GB",
+            actionLabel = stringResource(R.string.action_review),
+            priority = CleanupPriority.Medium,
+        ),
+        CleanupCategory(
+            id = "screenshots",
+            title = stringResource(R.string.category_screenshots_title),
+            subtitle = stringResource(R.string.category_screenshots_subtitle),
+            recoverableLabel = "820 MB",
+            actionLabel = stringResource(R.string.action_review),
+            priority = CleanupPriority.Medium,
+        ),
+        CleanupCategory(
+            id = "blurry_photos",
+            title = stringResource(R.string.category_blurry_photos_title),
+            subtitle = stringResource(R.string.category_blurry_photos_subtitle),
+            recoverableLabel = "640 MB",
+            actionLabel = stringResource(R.string.action_review),
+            priority = CleanupPriority.Low,
+        ),
+    )
 }
 
 @Preview(showBackground = true)
@@ -112,8 +159,8 @@ private fun DashboardScreenPreview() {
     CleanerTheme {
         DashboardScreen(
             recoverableSpaceLabel = "11.9 GB",
-            scannedItemsLabel = "12,480 items scanned",
-            categories = previewCleanupCategories,
+            scannedItemsLabel = stringResource(R.string.dashboard_scanned_items_preview),
+            categories = localizedPreviewCleanupCategories(),
             onCategoryClick = {},
         )
     }

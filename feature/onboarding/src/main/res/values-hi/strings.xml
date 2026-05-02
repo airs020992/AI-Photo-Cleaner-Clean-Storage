@@ -1,0 +1,21 @@
+<resources>
+    <string name="onboarding_title">सुरक्षित रूप से जगह खाली करें</string>
+    <string name="onboarding_body">डुप्लिकेट फ़ोटो, धुंधली तस्वीरें, स्क्रीनशॉट और बड़े वीडियो ढूंढें। आपकी पुष्टि के बिना कुछ भी हटाया नहीं जाएगा।</string>
+    <string name="onboarding_trust_scan_first_title">पहले स्कैन, भुगतान बाद में</string>
+    <string name="onboarding_trust_scan_first_body">किसी अपग्रेड प्रॉम्प्ट से पहले देखें कि जगह कहाँ खर्च हो रही है।</string>
+    <string name="onboarding_trust_review_title">हटाने से पहले समीक्षा करें</string>
+    <string name="onboarding_trust_review_body">आप तय करते हैं कि क्या रखना है और क्या साफ़ करना है।</string>
+    <string name="onboarding_trust_media_title">आपकी फ़ोटो के लिए बनाया गया</string>
+    <string name="onboarding_trust_media_body">ऐप सिर्फ़ उतनी मीडिया अनुमति मांगता है जितनी स्टोरेज वेस्ट खोजने के लिए ज़रूरी है।</string>
+    <string name="onboarding_cta_scan">मेरी फ़ोटो स्कैन करें</string>
+    <string name="onboarding_cta_continue">स्कैन जारी रखें</string>
+    <string name="permission_status_full_title">मीडिया एक्सेस तैयार है</string>
+    <string name="permission_status_full_body">ऐप आपकी पूरी फ़ोटो और वीडियो लाइब्रेरी स्कैन करके स्टोरेज वेस्ट खोज सकता है।</string>
+    <string name="permission_status_selected_title">चुनी हुई फ़ोटो का एक्सेस</string>
+    <string name="permission_status_selected_body">ऐप सिर्फ़ आपकी चुनी हुई फ़ोटो और वीडियो स्कैन कर सकता है। पूरा एक्सेस ज़्यादा क्लीनअप अवसर खोजता है।</string>
+    <string name="permission_status_none_title">अनुमति आगे मांगी जाएगी</string>
+    <string name="permission_status_none_body">बटन दबाने के बाद Android फ़ोटो और वीडियो की अनुमति मांग सकता है।</string>
+    <string name="permission_helper_full">स्कैन के लिए तैयार। हटाने से पहले आप सब कुछ देखेंगे।</string>
+    <string name="permission_helper_selected">सीमित एक्सेस सुरक्षित है, लेकिन पूरा एक्सेस बेहतर क्लीनअप स्कैन देता है।</string>
+    <string name="permission_helper_none">Android आगे फ़ोटो और वीडियो की अनुमति मांग सकता है।</string>
+</resources>

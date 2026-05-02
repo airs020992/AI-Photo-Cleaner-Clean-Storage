@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_summary_label">You can free up</string>
+    <string name="dashboard_scanned_items_preview">12,480 items scanned</string>
+    <string name="dashboard_chip_safe_preview">Safe preview</string>
+    <string name="dashboard_section_biggest_wins">Start with the biggest wins</string>
+    <string name="dashboard_footer_trust">You review everything before deleting. Premium and ads appear only after useful scan results.</string>
+    <string name="category_large_videos_title">Large videos</string>
+    <string name="category_large_videos_subtitle">Compress or remove the biggest files first</string>
+    <string name="category_similar_photos_title">Similar photos</string>
+    <string name="category_similar_photos_subtitle">Pick the best shot from repeated moments</string>
+    <string name="category_duplicate_photos_title">Duplicate photos</string>
+    <string name="category_duplicate_photos_subtitle">Review exact copies before deleting</string>
+    <string name="category_screenshots_title">Screenshots</string>
+    <string name="category_screenshots_subtitle">Clean old captures you no longer need</string>
+    <string name="category_blurry_photos_title">Blurry photos</string>
+    <string name="category_blurry_photos_subtitle">Check low-quality images manually</string>
+    <string name="action_open">Open</string>
+    <string name="action_review">Review</string>
+</resources>

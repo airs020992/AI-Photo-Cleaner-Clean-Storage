@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_summary_label">आप खाली कर सकते हैं</string>
+    <string name="dashboard_scanned_items_preview">12,480 आइटम स्कैन हुए</string>
+    <string name="dashboard_chip_safe_preview">सुरक्षित प्रीव्यू</string>
+    <string name="dashboard_section_biggest_wins">सबसे बड़े फायदे से शुरू करें</string>
+    <string name="dashboard_footer_trust">हटाने से पहले आप सब कुछ देखते हैं। Premium और विज्ञापन उपयोगी स्कैन परिणामों के बाद ही दिखते हैं।</string>
+    <string name="category_large_videos_title">बड़े वीडियो</string>
+    <string name="category_large_videos_subtitle">सबसे बड़ी फ़ाइलों को पहले कंप्रेस या हटाएं</string>
+    <string name="category_similar_photos_title">मिलती-जुलती फ़ोटो</string>
+    <string name="category_similar_photos_subtitle">दोहराए गए पलों में से सबसे अच्छी फ़ोटो चुनें</string>
+    <string name="category_duplicate_photos_title">डुप्लिकेट फ़ोटो</string>
+    <string name="category_duplicate_photos_subtitle">हटाने से पहले असली कॉपी की समीक्षा करें</string>
+    <string name="category_screenshots_title">स्क्रीनशॉट</string>
+    <string name="category_screenshots_subtitle">पुराने स्क्रीनशॉट साफ़ करें जिनकी अब ज़रूरत नहीं</string>
+    <string name="category_blurry_photos_title">धुंधली फ़ोटो</string>
+    <string name="category_blurry_photos_subtitle">कम गुणवत्ता वाली तस्वीरें खुद जांचें</string>
+    <string name="action_open">खोलें</string>
+    <string name="action_review">समीक्षा करें</string>
+</resources>

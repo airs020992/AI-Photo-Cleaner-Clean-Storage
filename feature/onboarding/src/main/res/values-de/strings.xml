@@ -1,0 +1,21 @@
+<resources>
+    <string name="onboarding_title">Speicher sicher freigeben</string>
+    <string name="onboarding_body">Finden Sie doppelte Fotos, unscharfe Aufnahmen, Screenshots und grosse Videos. Ohne Ihre Bestaetigung wird nichts geloescht.</string>
+    <string name="onboarding_trust_scan_first_title">Erst scannen, spaeter zahlen</string>
+    <string name="onboarding_trust_scan_first_body">Sehen Sie, was Speicher belegt, bevor ein Upgrade erscheint.</string>
+    <string name="onboarding_trust_review_title">Vor dem Loeschen pruefen</string>
+    <string name="onboarding_trust_review_body">Sie entscheiden, was bleibt und was bereinigt wird.</string>
+    <string name="onboarding_trust_media_title">Fuer Ihre Fotos gebaut</string>
+    <string name="onboarding_trust_media_body">Die App fragt nur nach Medienzugriff, der fuer die Suche nach Speicherfressern noetig ist.</string>
+    <string name="onboarding_cta_scan">Meine Fotos scannen</string>
+    <string name="onboarding_cta_continue">Weiter zum Scan</string>
+    <string name="permission_status_full_title">Medienzugriff bereit</string>
+    <string name="permission_status_full_body">Die App kann Ihre gesamte Foto- und Videobibliothek nach Speicherfressern scannen.</string>
+    <string name="permission_status_selected_title">Zugriff auf ausgewaehlte Fotos</string>
+    <string name="permission_status_selected_body">Die App kann nur ausgewaehlte Fotos und Videos scannen. Voller Zugriff findet mehr Moeglichkeiten zur Bereinigung.</string>
+    <string name="permission_status_none_title">Berechtigung folgt als Naechstes</string>
+    <string name="permission_status_none_body">Android kann Sie nach dem Tippen bitten, Fotos und Videos zu erlauben.</string>
+    <string name="permission_helper_full">Bereit zum Scannen. Sie pruefen weiterhin alles vor dem Loeschen.</string>
+    <string name="permission_helper_selected">Begrenzter Zugriff ist sicher, voller Zugriff liefert aber einen besseren Scan.</string>
+    <string name="permission_helper_none">Android kann Sie als Naechstes bitten, Fotos und Videos zu erlauben.</string>
+</resources>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_summary_label">Sie koennen freigeben</string>
+    <string name="dashboard_scanned_items_preview">12.480 Elemente gescannt</string>
+    <string name="dashboard_chip_safe_preview">Sichere Vorschau</string>
+    <string name="dashboard_section_biggest_wins">Mit den groessten Gewinnen beginnen</string>
+    <string name="dashboard_footer_trust">Sie pruefen alles vor dem Loeschen. Premium und Anzeigen erscheinen erst nach nuetzlichen Scan-Ergebnissen.</string>
+    <string name="category_large_videos_title">Grosse Videos</string>
+    <string name="category_large_videos_subtitle">Die groessten Dateien zuerst komprimieren oder entfernen</string>
+    <string name="category_similar_photos_title">Aehnliche Fotos</string>
+    <string name="category_similar_photos_subtitle">Waehlen Sie die beste Aufnahme aus wiederholten Momenten</string>
+    <string name="category_duplicate_photos_title">Doppelte Fotos</string>
+    <string name="category_duplicate_photos_subtitle">Exakte Kopien vor dem Loeschen pruefen</string>
+    <string name="category_screenshots_title">Screenshots</string>
+    <string name="category_screenshots_subtitle">Alte Aufnahmen bereinigen, die Sie nicht mehr brauchen</string>
+    <string name="category_blurry_photos_title">Unscharfe Fotos</string>
+    <string name="category_blurry_photos_subtitle">Bilder mit niedriger Qualitaet manuell pruefen</string>
+    <string name="action_open">Oeffnen</string>
+    <string name="action_review">Pruefen</string>
+</resources>

@@ -10,12 +10,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.feature.dashboard.DashboardScreen
-import com.air.cleaner.feature.dashboard.previewCleanupCategories
+import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
 
 @Composable
@@ -34,8 +35,8 @@ fun AIPhotoCleanerApp() {
         if (permissionState.canScanAnyMedia) {
             DashboardScreen(
                 recoverableSpaceLabel = "11.9 GB",
-                scannedItemsLabel = "12,480 items scanned",
-                categories = previewCleanupCategories,
+                scannedItemsLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.dashboard_scanned_items_preview),
+                categories = localizedPreviewCleanupCategories(),
                 onCategoryClick = {},
             )
         } else {

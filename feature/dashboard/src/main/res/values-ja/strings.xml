@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_summary_label">空けられる容量</string>
+    <string name="dashboard_scanned_items_preview">12,480 件をスキャン済み</string>
+    <string name="dashboard_chip_safe_preview">安全に確認</string>
+    <string name="dashboard_section_biggest_wins">大きな効果から始める</string>
+    <string name="dashboard_footer_trust">削除前にすべて確認できます。Premium と広告は有用なスキャン結果の後に表示されます。</string>
+    <string name="category_large_videos_title">大きな動画</string>
+    <string name="category_large_videos_subtitle">容量の大きいファイルから圧縮または削除</string>
+    <string name="category_similar_photos_title">類似写真</string>
+    <string name="category_similar_photos_subtitle">連続した写真から最適な1枚を選択</string>
+    <string name="category_duplicate_photos_title">重複写真</string>
+    <string name="category_duplicate_photos_subtitle">完全なコピーを削除前に確認</string>
+    <string name="category_screenshots_title">スクリーンショット</string>
+    <string name="category_screenshots_subtitle">不要になった古いスクリーンショットを整理</string>
+    <string name="category_blurry_photos_title">ぼやけた写真</string>
+    <string name="category_blurry_photos_subtitle">低品質の画像を手動で確認</string>
+    <string name="action_open">開く</string>
+    <string name="action_review">確認</string>
+</resources>

@@ -1,0 +1,21 @@
+<resources>
+    <string name="onboarding_title">Free up space safely</string>
+    <string name="onboarding_body">Find duplicate photos, blurry shots, screenshots, and large videos. Nothing is deleted without your confirmation.</string>
+    <string name="onboarding_trust_scan_first_title">Scan first, pay later</string>
+    <string name="onboarding_trust_scan_first_body">See what is wasting space before any upgrade prompt.</string>
+    <string name="onboarding_trust_review_title">Review before deleting</string>
+    <string name="onboarding_trust_review_body">You choose what stays and what gets cleaned.</string>
+    <string name="onboarding_trust_media_title">Built for your photos</string>
+    <string name="onboarding_trust_media_body">The app asks only for media access needed to find storage waste.</string>
+    <string name="onboarding_cta_scan">Scan my photos</string>
+    <string name="onboarding_cta_continue">Continue to scan</string>
+    <string name="permission_status_full_title">Media access ready</string>
+    <string name="permission_status_full_body">The app can scan your full photo and video library for storage waste.</string>
+    <string name="permission_status_selected_title">Selected photos access</string>
+    <string name="permission_status_selected_body">The app can scan only the photos and videos you selected. Full access finds more cleanup opportunities.</string>
+    <string name="permission_status_none_title">Permission requested next</string>
+    <string name="permission_status_none_body">Android may ask you to allow photos and videos after you tap the button.</string>
+    <string name="permission_helper_full">Ready to scan. You still review everything before deleting.</string>
+    <string name="permission_helper_selected">Limited access is safe, but full access gives a better cleanup scan.</string>
+    <string name="permission_helper_none">Android may ask you to allow photos and videos next.</string>
+</resources>

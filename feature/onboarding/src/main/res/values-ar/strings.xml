@@ -1,0 +1,21 @@
+<resources>
+    <string name="onboarding_title">وفّر المساحة بأمان</string>
+    <string name="onboarding_body">اعثر على الصور المكررة واللقطات غير الواضحة ولقطات الشاشة ومقاطع الفيديو الكبيرة. لن يتم حذف أي شيء بدون تأكيدك.</string>
+    <string name="onboarding_trust_scan_first_title">افحص أولاً وادفع لاحقاً</string>
+    <string name="onboarding_trust_scan_first_body">شاهد ما يستهلك المساحة قبل ظهور أي طلب ترقية.</string>
+    <string name="onboarding_trust_review_title">راجع قبل الحذف</string>
+    <string name="onboarding_trust_review_body">أنت تختار ما يبقى وما يتم تنظيفه.</string>
+    <string name="onboarding_trust_media_title">مصمم لصورك</string>
+    <string name="onboarding_trust_media_body">يطلب التطبيق فقط صلاحية الوسائط اللازمة للعثور على هدر المساحة.</string>
+    <string name="onboarding_cta_scan">فحص صوري</string>
+    <string name="onboarding_cta_continue">متابعة الفحص</string>
+    <string name="permission_status_full_title">الوصول إلى الوسائط جاهز</string>
+    <string name="permission_status_full_body">يمكن للتطبيق فحص مكتبة الصور والفيديو بالكامل للعثور على هدر المساحة.</string>
+    <string name="permission_status_selected_title">الوصول إلى صور محددة</string>
+    <string name="permission_status_selected_body">يمكن للتطبيق فحص الصور ومقاطع الفيديو التي اخترتها فقط. الوصول الكامل يعثر على فرص تنظيف أكثر.</string>
+    <string name="permission_status_none_title">سيتم طلب الإذن بعد ذلك</string>
+    <string name="permission_status_none_body">قد يطلب Android السماح بالصور ومقاطع الفيديو بعد الضغط على الزر.</string>
+    <string name="permission_helper_full">جاهز للفحص. ستراجع كل شيء قبل الحذف.</string>
+    <string name="permission_helper_selected">الوصول المحدود آمن، لكن الوصول الكامل يعطي فحصاً أفضل.</string>
+    <string name="permission_helper_none">قد يطلب Android السماح بالصور ومقاطع الفيديو بعد ذلك.</string>
+</resources>

@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,26 +37,26 @@ fun OnboardingScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Text(
-                text = "Free up space safely",
+                text = stringResource(R.string.onboarding_title),
                 style = MaterialTheme.typography.headlineLarge,
             )
             Text(
-                text = "Find duplicate photos, blurry shots, screenshots, and large videos. Nothing is deleted without your confirmation.",
+                text = stringResource(R.string.onboarding_body),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(4.dp))
             TrustPoint(
-                title = "Scan first, pay later",
-                body = "See what is wasting space before any upgrade prompt.",
+                title = stringResource(R.string.onboarding_trust_scan_first_title),
+                body = stringResource(R.string.onboarding_trust_scan_first_body),
             )
             TrustPoint(
-                title = "Review before deleting",
-                body = "You choose what stays and what gets cleaned.",
+                title = stringResource(R.string.onboarding_trust_review_title),
+                body = stringResource(R.string.onboarding_trust_review_body),
             )
             TrustPoint(
-                title = "Built for your photos",
-                body = "The app asks only for media access needed to find storage waste.",
+                title = stringResource(R.string.onboarding_trust_media_title),
+                body = stringResource(R.string.onboarding_trust_media_body),
             )
             PermissionStatus(mediaAccess = mediaAccess)
         }
@@ -65,7 +66,13 @@ fun OnboardingScreen(
                 onClick = onRequestPermission,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (mediaAccess == MediaPermissionAccess.None) "Scan my photos" else "Continue to scan")
+                Text(
+                    if (mediaAccess == MediaPermissionAccess.None) {
+                        stringResource(R.string.onboarding_cta_scan)
+                    } else {
+                        stringResource(R.string.onboarding_cta_continue)
+                    }
+                )
             }
             Text(
                 text = permissionHelperText(mediaAccess),
@@ -82,12 +89,12 @@ private fun PermissionStatus(
     modifier: Modifier = Modifier,
 ) {
     val (title, body) = when (mediaAccess) {
-        MediaPermissionAccess.Full -> "Media access ready" to
-            "The app can scan your full photo and video library for storage waste."
-        MediaPermissionAccess.SelectedOnly -> "Selected photos access" to
-            "The app can scan only the photos and videos you selected. Full access finds more cleanup opportunities."
-        MediaPermissionAccess.None -> "Permission requested next" to
-            "Android may ask you to allow photos and videos after you tap the button."
+        MediaPermissionAccess.Full -> stringResource(R.string.permission_status_full_title) to
+            stringResource(R.string.permission_status_full_body)
+        MediaPermissionAccess.SelectedOnly -> stringResource(R.string.permission_status_selected_title) to
+            stringResource(R.string.permission_status_selected_body)
+        MediaPermissionAccess.None -> stringResource(R.string.permission_status_none_title) to
+            stringResource(R.string.permission_status_none_body)
     }
 
     Surface(
@@ -113,11 +120,12 @@ private fun PermissionStatus(
     }
 }
 
+@Composable
 private fun permissionHelperText(mediaAccess: MediaPermissionAccess): String {
     return when (mediaAccess) {
-        MediaPermissionAccess.Full -> "Ready to scan. You still review everything before deleting."
-        MediaPermissionAccess.SelectedOnly -> "Limited access is safe, but full access gives a better cleanup scan."
-        MediaPermissionAccess.None -> "Android may ask you to allow photos and videos next."
+        MediaPermissionAccess.Full -> stringResource(R.string.permission_helper_full)
+        MediaPermissionAccess.SelectedOnly -> stringResource(R.string.permission_helper_selected)
+        MediaPermissionAccess.None -> stringResource(R.string.permission_helper_none)
     }
 }
 
@@ -138,7 +146,7 @@ private fun TrustPoint(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "✓",
+                text = "OK",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,

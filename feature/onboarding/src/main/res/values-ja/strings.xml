@@ -1,0 +1,21 @@
+<resources>
+    <string name="onboarding_title">安全に空き容量を増やす</string>
+    <string name="onboarding_body">重複写真、ぼやけた写真、スクリーンショット、大きな動画を見つけます。確認なしに削除されることはありません。</string>
+    <string name="onboarding_trust_scan_first_title">まずスキャン、支払いは後で</string>
+    <string name="onboarding_trust_scan_first_body">アップグレード表示の前に、容量を使っている項目を確認できます。</string>
+    <string name="onboarding_trust_review_title">削除前に確認</string>
+    <string name="onboarding_trust_review_body">残すものと整理するものを自分で選べます。</string>
+    <string name="onboarding_trust_media_title">写真のための設計</string>
+    <string name="onboarding_trust_media_body">容量の無駄を見つけるために必要なメディア権限だけを求めます。</string>
+    <string name="onboarding_cta_scan">写真をスキャン</string>
+    <string name="onboarding_cta_continue">スキャンへ進む</string>
+    <string name="permission_status_full_title">メディアアクセス準備完了</string>
+    <string name="permission_status_full_body">写真と動画ライブラリ全体をスキャンして、容量の無駄を見つけられます。</string>
+    <string name="permission_status_selected_title">選択した写真へのアクセス</string>
+    <string name="permission_status_selected_body">選択した写真と動画だけをスキャンできます。全体アクセスではより多くの整理候補を見つけられます。</string>
+    <string name="permission_status_none_title">次に権限をリクエスト</string>
+    <string name="permission_status_none_body">ボタンを押すと、Android が写真と動画の許可を求める場合があります。</string>
+    <string name="permission_helper_full">スキャン準備完了。削除前にすべて確認できます。</string>
+    <string name="permission_helper_selected">限定アクセスでも安全ですが、全体アクセスの方がより良いスキャンになります。</string>
+    <string name="permission_helper_none">次に Android が写真と動画の許可を求める場合があります。</string>
+</resources>
