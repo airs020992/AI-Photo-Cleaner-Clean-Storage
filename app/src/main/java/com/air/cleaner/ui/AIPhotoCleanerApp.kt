@@ -23,6 +23,8 @@ import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
 import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
+import com.air.cleaner.feature.photos.PhotoReviewScreen
+import com.air.cleaner.feature.photos.previewDuplicateGroups
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -43,6 +45,7 @@ fun AIPhotoCleanerApp() {
 
         if (permissionState.canScanAnyMedia) {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
+            var appScreen by remember { mutableStateOf(AppScreen.Dashboard) }
 
             LaunchedEffect(context, permissionState.access) {
                 scanSummary = withContext(Dispatchers.IO) {
@@ -50,12 +53,24 @@ fun AIPhotoCleanerApp() {
                 }
             }
 
-            DashboardScreen(
-                recoverableSpaceLabel = scanSummary?.totalBytes.toStorageLabel(),
-                scannedItemsLabel = scanSummary?.totalCount.toScannedItemsLabel(),
-                categories = scanSummary?.toCleanupCategories() ?: localizedPreviewCleanupCategories(),
-                onCategoryClick = {},
-            )
+            when (appScreen) {
+                AppScreen.Dashboard -> DashboardScreen(
+                    recoverableSpaceLabel = scanSummary?.totalBytes.toStorageLabel(),
+                    scannedItemsLabel = scanSummary?.totalCount.toScannedItemsLabel(),
+                    categories = scanSummary?.toCleanupCategories() ?: localizedPreviewCleanupCategories(),
+                    onCategoryClick = { category ->
+                        if (category.id == "duplicate_photos") {
+                            appScreen = AppScreen.DuplicatePhotos
+                        }
+                    },
+                )
+                AppScreen.DuplicatePhotos -> PhotoReviewScreen(
+                    title = "Duplicate photos",
+                    groups = previewDuplicateGroups,
+                    onBack = { appScreen = AppScreen.Dashboard },
+                    onContinue = {},
+                )
+            }
         } else {
             OnboardingScreen(
                 mediaAccess = permissionState.access,
@@ -65,6 +80,11 @@ fun AIPhotoCleanerApp() {
             )
         }
     }
+}
+
+private enum class AppScreen {
+    Dashboard,
+    DuplicatePhotos,
 }
 
 @Composable
