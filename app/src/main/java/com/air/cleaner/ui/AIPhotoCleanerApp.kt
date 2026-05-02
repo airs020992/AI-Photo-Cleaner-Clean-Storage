@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
+import com.air.cleaner.feature.dashboard.DashboardScreen
+import com.air.cleaner.feature.dashboard.previewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
 
 @Composable
@@ -29,12 +31,21 @@ fun AIPhotoCleanerApp() {
             permissionState = context.currentMediaPermissionState()
         }
 
-        OnboardingScreen(
-            mediaAccess = permissionState.access,
-            onRequestPermission = {
-                permissionLauncher.launch(mediaPermissionsForCurrentDevice())
-            }
-        )
+        if (permissionState.canScanAnyMedia) {
+            DashboardScreen(
+                recoverableSpaceLabel = "11.9 GB",
+                scannedItemsLabel = "12,480 items scanned",
+                categories = previewCleanupCategories,
+                onCategoryClick = {},
+            )
+        } else {
+            OnboardingScreen(
+                mediaAccess = permissionState.access,
+                onRequestPermission = {
+                    permissionLauncher.launch(mediaPermissionsForCurrentDevice())
+                },
+            )
+        }
     }
 }
 

@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:permissions"))
     implementation(project(":feature:onboarding"))
+    implementation(project(":feature:dashboard"))
     implementation(project(":feature:scan"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:photos"))
