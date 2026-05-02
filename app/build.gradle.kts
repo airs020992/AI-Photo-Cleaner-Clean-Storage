@@ -32,7 +32,6 @@ dependencies {
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:scan"))
-    implementation(project(":feature:dashboard"))
     implementation(project(":feature:photos"))
     implementation(project(":feature:videos"))
     implementation(project(":feature:paywall"))
@@ -43,9 +42,13 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.coroutines.android)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
+
+    testImplementation(libs.junit)
 }

@@ -4,21 +4,71 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.data.media.AndroidMediaStoreRepository
 import com.air.cleaner.data.media.MediaScanSummary
-import com.air.cleaner.feature.dashboard.DashboardScreen
 import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
 import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
@@ -45,7 +95,7 @@ fun AIPhotoCleanerApp() {
 
         if (permissionState.canScanAnyMedia) {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
-            var appScreen by remember { mutableStateOf(AppScreen.Dashboard) }
+            var navigationState by remember { mutableStateOf(AppNavigationState()) }
 
             LaunchedEffect(context, permissionState.access) {
                 scanSummary = withContext(Dispatchers.IO) {
@@ -53,24 +103,13 @@ fun AIPhotoCleanerApp() {
                 }
             }
 
-            when (appScreen) {
-                AppScreen.Dashboard -> DashboardScreen(
-                    recoverableSpaceLabel = scanSummary?.totalBytes.toStorageLabel(),
-                    scannedItemsLabel = scanSummary?.totalCount.toScannedItemsLabel(),
-                    categories = scanSummary?.toCleanupCategories() ?: localizedPreviewCleanupCategories(),
-                    onCategoryClick = { category ->
-                        if (category.id == "duplicate_photos") {
-                            appScreen = AppScreen.DuplicatePhotos
-                        }
-                    },
-                )
-                AppScreen.DuplicatePhotos -> PhotoReviewScreen(
-                    title = "Duplicate photos",
-                    groups = previewDuplicateGroups,
-                    onBack = { appScreen = AppScreen.Dashboard },
-                    onContinue = {},
-                )
-            }
+            MainAppShell(
+                navigationState = navigationState,
+                scanSummary = scanSummary,
+                onTabSelected = { navigationState = navigationState.selectTab(it) },
+                onOpenDuplicatePhotos = { navigationState = navigationState.openDuplicatePhotos() },
+                onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
+            )
         } else {
             OnboardingScreen(
                 mediaAccess = permissionState.access,
@@ -82,9 +121,387 @@ fun AIPhotoCleanerApp() {
     }
 }
 
-private enum class AppScreen {
-    Dashboard,
-    DuplicatePhotos,
+@Composable
+private fun MainAppShell(
+    navigationState: AppNavigationState,
+    scanSummary: MediaScanSummary?,
+    onTabSelected: (AppTab) -> Unit,
+    onOpenDuplicatePhotos: () -> Unit,
+    onBackToPhotos: () -> Unit,
+) {
+    Scaffold(
+        containerColor = Color(0xFFF6F8FA),
+        bottomBar = {
+            if (navigationState.shouldShowBottomTabs) {
+                CleanerNavigationBar(
+                    selectedTab = navigationState.selectedTab,
+                    onTabSelected = onTabSelected,
+                )
+            }
+        },
+    ) { padding ->
+        when (val screen = navigationState.currentScreen) {
+            is AppScreen.Tab -> TabScreen(
+                tab = screen.tab,
+                scanSummary = scanSummary,
+                onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+                contentPadding = padding,
+            )
+            AppScreen.DuplicatePhotoReview -> Box(modifier = Modifier.padding(padding)) {
+                PhotoReviewScreen(
+                    title = "Duplicate photos",
+                    groups = previewDuplicateGroups,
+                    onBack = onBackToPhotos,
+                    onContinue = {},
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TabScreen(
+    tab: AppTab,
+    scanSummary: MediaScanSummary?,
+    onOpenDuplicatePhotos: () -> Unit,
+    contentPadding: PaddingValues,
+) {
+    when (tab) {
+        AppTab.Clean -> CleanTabScreen(
+            scanSummary = scanSummary,
+            onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+            contentPadding = contentPadding,
+        )
+        AppTab.Photos -> PhotosTabScreen(
+            scanSummary = scanSummary,
+            onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+            contentPadding = contentPadding,
+        )
+        AppTab.Videos -> VideosTabScreen(
+            videoBytesLabel = scanSummary?.videoBytes.toStorageLabel(),
+            contentPadding = contentPadding,
+        )
+        AppTab.Settings -> SettingsTabScreen(contentPadding = contentPadding)
+    }
+}
+
+@Composable
+private fun CleanTabScreen(
+    scanSummary: MediaScanSummary?,
+    onOpenDuplicatePhotos: () -> Unit,
+    contentPadding: PaddingValues,
+) {
+    val categories = scanSummary?.toCleanupCategories() ?: localizedPreviewCleanupCategories()
+    ScreenColumn(contentPadding = contentPadding) {
+        TopHeader(title = "AI Cleaner", action = "Premium")
+        StorageHero(
+            recoverableSpaceLabel = scanSummary?.totalBytes.toStorageLabel(),
+            scannedItemsLabel = scanSummary?.totalCount.toScannedItemsLabel(),
+        )
+        SectionTitle("Biggest wins")
+        categories.take(3).forEach { category ->
+            MetricRow(
+                icon = category.icon(),
+                title = category.title,
+                subtitle = category.subtitle,
+                metric = category.recoverableLabel,
+                onClick = if (category.id == "duplicate_photos") onOpenDuplicatePhotos else null,
+            )
+        }
+        TrustStrip()
+    }
+}
+
+@Composable
+private fun PhotosTabScreen(
+    scanSummary: MediaScanSummary?,
+    onOpenDuplicatePhotos: () -> Unit,
+    contentPadding: PaddingValues,
+) {
+    ScreenColumn(contentPadding = contentPadding) {
+        TopHeader(title = "Photos", action = "Sort")
+        FilterChips(labels = listOf("Duplicates", "Similar", "Blurry", "Screenshots"))
+        MetricRow(
+            icon = Icons.Rounded.Image,
+            title = "Duplicate photos",
+            subtitle = "Review exact copies and keep the best original",
+            metric = "Preview",
+            onClick = onOpenDuplicatePhotos,
+        )
+        MetricRow(
+            icon = Icons.Rounded.AutoAwesome,
+            title = "Similar photos",
+            subtitle = "Repeated moments, bursts, and near-identical shots",
+            metric = scanSummary?.imageBytes.toStorageLabel(),
+        )
+        MetricRow(
+            icon = Icons.Rounded.Shield,
+            title = "Screenshots",
+            subtitle = "Old captures grouped for quick review",
+            metric = scanSummary?.screenshotBytes.toStorageLabel(),
+        )
+        BottomSummaryBar(text = "Safe selection protects at least one photo per group")
+    }
+}
+
+@Composable
+private fun VideosTabScreen(
+    videoBytesLabel: String,
+    contentPadding: PaddingValues,
+) {
+    ScreenColumn(contentPadding = contentPadding) {
+        TopHeader(title = "Videos", action = "Filter")
+        PremiumSurface {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Large videos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(videoBytesLabel, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "Compress preview creates a copy first. Originals stay untouched until you confirm.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        MetricRow(Icons.Rounded.PlayCircle, "Travel clip", "03:42 | 1080p", "920 MB")
+        MetricRow(Icons.Rounded.PlayCircle, "Screen recording", "01:18 | 1440p", "460 MB")
+        BottomSummaryBar(text = "Compression estimate is shown before any destructive action")
+    }
+}
+
+@Composable
+private fun SettingsTabScreen(contentPadding: PaddingValues) {
+    ScreenColumn(contentPadding = contentPadding) {
+        TopHeader(title = "Settings", action = "v0.1")
+        PremiumSurface {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text("Trust-first cleanup", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("No fake booster claims. No deletion without confirmation.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        listOf("Language", "Subscription", "Privacy", "Restore purchases", "Scan rules").forEach {
+            MetricRow(
+                icon = Icons.Rounded.Settings,
+                title = it,
+                subtitle = "Manage $it",
+                metric = "Open",
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScreenColumn(
+    contentPadding: PaddingValues,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        content = content,
+    )
+}
+
+@Composable
+private fun TopHeader(title: String, action: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        AssistChip(onClick = {}, label = { Text(action) })
+    }
+}
+
+@Composable
+private fun StorageHero(
+    recoverableSpaceLabel: String,
+    scannedItemsLabel: String,
+) {
+    PremiumSurface {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Free up", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    recoverableSpaceLabel,
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(scannedItemsLabel, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Safe preview before deleting",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            StorageRing(progress = 0.68f)
+        }
+    }
+}
+
+@Composable
+private fun StorageRing(progress: Float) {
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = Color(0xFF2F80ED)
+    val track = Color(0xFFE2E8F0)
+    Box(modifier = Modifier.size(104.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val stroke = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+            val size = Size(size.width - 12.dp.toPx(), size.height - 12.dp.toPx())
+            val topLeft = Offset(6.dp.toPx(), 6.dp.toPx())
+            drawArc(track, -90f, 360f, false, topLeft, size, style = stroke)
+            drawArc(primary, -90f, 360f * progress, false, topLeft, size, style = stroke)
+            drawArc(secondary, -90f + 360f * progress + 8f, 42f, false, topLeft, size, style = stroke)
+        }
+        Text("${(progress * 100).roundToInt()}%", fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun PremiumSurface(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Box(modifier = Modifier.padding(18.dp)) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun MetricRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    metric: String,
+    onClick: (() -> Unit)? = null,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        color = Color.White,
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFEAF5F3)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = Color(0xFF0F766E))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(metric, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+}
+
+@Composable
+private fun FilterChips(labels: List<String>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        labels.forEachIndexed { index, label ->
+            AssistChip(
+                onClick = {},
+                label = { Text(label) },
+                enabled = index != 0,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrustStrip() {
+    BottomSummaryBar(text = "Review everything first. Premium and ads appear only after useful scan results.")
+}
+
+@Composable
+private fun BottomSummaryBar(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFEAF5F3),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(14.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF115E59),
+        )
+    }
+}
+
+@Composable
+private fun CleanerNavigationBar(
+    selectedTab: AppTab,
+    onTabSelected: (AppTab) -> Unit,
+) {
+    NavigationBar(containerColor = Color.White) {
+        AppTab.primaryTabs.forEach { tab ->
+            NavigationBarItem(
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
+                icon = { Icon(tab.icon(), contentDescription = null) },
+                label = { Text(tab.label) },
+            )
+        }
+    }
+}
+
+private fun AppTab.icon(): ImageVector {
+    return when (this) {
+        AppTab.Clean -> Icons.Rounded.CleaningServices
+        AppTab.Photos -> Icons.Rounded.Image
+        AppTab.Videos -> Icons.Rounded.PlayCircle
+        AppTab.Settings -> Icons.Rounded.Settings
+    }
+}
+
+private fun CleanupCategory.icon(): ImageVector {
+    return when (id) {
+        "large_videos" -> Icons.Rounded.PlayCircle
+        "similar_photos", "duplicate_photos", "screenshots", "blurry_photos" -> Icons.Rounded.Image
+        else -> Icons.Rounded.CleaningServices
+    }
 }
 
 @Composable
@@ -119,20 +536,20 @@ private fun MediaScanSummary.toCleanupCategories(): List<CleanupCategory> {
             priority = CleanupPriority.High,
         ),
         CleanupCategory(
-            id = "screenshots",
-            title = stringResource(com.air.cleaner.feature.dashboard.R.string.category_screenshots_title),
-            subtitle = stringResource(com.air.cleaner.feature.dashboard.R.string.category_screenshots_subtitle),
-            recoverableLabel = formatBytes(screenshotBytes),
-            actionLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.action_review),
-            priority = CleanupPriority.Medium,
-        ),
-        CleanupCategory(
             id = "similar_photos",
             title = stringResource(com.air.cleaner.feature.dashboard.R.string.category_similar_photos_title),
             subtitle = stringResource(com.air.cleaner.feature.dashboard.R.string.category_similar_photos_subtitle),
             recoverableLabel = formatBytes(imageBytes),
             actionLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.action_review),
             priority = CleanupPriority.High,
+        ),
+        CleanupCategory(
+            id = "screenshots",
+            title = stringResource(com.air.cleaner.feature.dashboard.R.string.category_screenshots_title),
+            subtitle = stringResource(com.air.cleaner.feature.dashboard.R.string.category_screenshots_subtitle),
+            recoverableLabel = formatBytes(screenshotBytes),
+            actionLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.action_review),
+            priority = CleanupPriority.Medium,
         ),
         CleanupCategory(
             id = "duplicate_photos",
@@ -193,5 +610,26 @@ private fun mediaPermissionsForCurrentDevice(): Array<String> {
             Manifest.permission.READ_MEDIA_VIDEO,
         )
         else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun MainAppShellPreview() {
+    CleanerTheme {
+        MainAppShell(
+            navigationState = AppNavigationState(),
+            scanSummary = MediaScanSummary(
+                imageCount = 8_240,
+                videoCount = 420,
+                imageBytes = 3_400_000_000L,
+                videoBytes = 5_200_000_000L,
+                screenshotCount = 820,
+                screenshotBytes = 820_000_000L,
+            ),
+            onTabSelected = {},
+            onOpenDuplicatePhotos = {},
+            onBackToPhotos = {},
+        )
     }
 }
