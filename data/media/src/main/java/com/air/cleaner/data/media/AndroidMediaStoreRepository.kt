@@ -1,6 +1,7 @@
 package com.air.cleaner.data.media
 
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -33,11 +34,24 @@ class AndroidMediaStoreRepository(
     }
 
     override suspend fun scanDuplicatePhotoGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
-        DuplicatePhotoDetector().findDuplicates(
+        ExactDuplicatePhotoScanner(
+            contentFingerprint = { contentKey ->
+                runCatching {
+                    contentResolver.openInputStream(Uri.parse(contentKey))?.use { inputStream ->
+                        ImageContentFingerprinter.sha256(inputStream)
+                    }
+                }.getOrNull()
+            },
+        ).findDuplicateGroups(
             scanItems(
                 uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 mediaType = MediaType.Image,
-            ).map { it.item },
+            ).map { itemWithPath ->
+                DuplicatePhotoCandidate(
+                    item = itemWithPath.item,
+                    contentKey = itemWithPath.contentUri.toString(),
+                )
+            },
         )
     }
 
@@ -57,7 +71,11 @@ class AndroidMediaStoreRepository(
                 val row = cursor.toMediaStoreRow()
                 val item = MediaStoreRowMapper.map(row, mediaType)
                 if (item != null) {
-                    items += MediaItemWithPath(item = item, relativePath = row.relativePath)
+                    items += MediaItemWithPath(
+                        item = item,
+                        relativePath = row.relativePath,
+                        contentUri = ContentUris.withAppendedId(uri, row.id),
+                    )
                 }
             }
         }
@@ -109,5 +127,6 @@ class AndroidMediaStoreRepository(
     private data class MediaItemWithPath(
         val item: MediaItem,
         val relativePath: String?,
+        val contentUri: Uri,
     )
 }

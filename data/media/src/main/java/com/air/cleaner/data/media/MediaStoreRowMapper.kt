@@ -17,23 +17,12 @@ object MediaStoreRowMapper {
             displayName = displayName,
             sizeBytes = sizeBytes,
             dateTakenMillis = dateMillis,
-            contentHash = row.duplicateCandidateKey(mediaType, sizeBytes, dateMillis),
+            contentHash = null,
             mediaType = mediaType,
         )
     }
 
     private fun Long?.toMillis(): Long {
         return this?.times(1_000L) ?: 0L
-    }
-
-    private fun MediaStoreRow.duplicateCandidateKey(
-        mediaType: MediaType,
-        sizeBytes: Long,
-        dateMillis: Long,
-    ): String? {
-        if (mediaType != MediaType.Image || dateMillis <= 0L) {
-            return null
-        }
-        return "image:$sizeBytes:$dateMillis"
     }
 }

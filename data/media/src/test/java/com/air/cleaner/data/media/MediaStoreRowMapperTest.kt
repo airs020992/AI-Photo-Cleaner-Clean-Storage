@@ -24,7 +24,7 @@ class MediaStoreRowMapperTest {
         assertEquals(2_500_000L, item?.sizeBytes)
         assertEquals(1_700_000_000_000L, item?.dateTakenMillis)
         assertEquals(MediaType.Image, item?.mediaType)
-        assertEquals("image:2500000:1700000000000", item?.contentHash)
+        assertNull(item?.contentHash)
     }
 
     @Test
