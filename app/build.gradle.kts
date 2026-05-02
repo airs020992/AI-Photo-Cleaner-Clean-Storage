@@ -28,6 +28,7 @@ android {
 dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:permissions"))
+    implementation(project(":domain:cleaning"))
     implementation(project(":data:media"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:dashboard"))

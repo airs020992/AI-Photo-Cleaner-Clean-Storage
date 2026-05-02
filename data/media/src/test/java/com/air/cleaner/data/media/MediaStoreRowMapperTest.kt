@@ -24,6 +24,22 @@ class MediaStoreRowMapperTest {
         assertEquals(2_500_000L, item?.sizeBytes)
         assertEquals(1_700_000_000_000L, item?.dateTakenMillis)
         assertEquals(MediaType.Image, item?.mediaType)
+        assertEquals("image:2500000:1700000000000", item?.contentHash)
+    }
+
+    @Test
+    fun doesNotAssignDuplicateCandidateKeyToVideos() {
+        val row = MediaStoreRow(
+            id = 42L,
+            displayName = "VID_0420.mp4",
+            sizeBytes = 2_500_000L,
+            dateTakenMillis = 1_700_000_000_000L,
+            dateModifiedSeconds = 1_600_000_000L,
+            relativePath = "Movies/",
+        )
+
+        val item = MediaStoreRowMapper.map(row, MediaType.Video)
+
         assertNull(item?.contentHash)
     }
 

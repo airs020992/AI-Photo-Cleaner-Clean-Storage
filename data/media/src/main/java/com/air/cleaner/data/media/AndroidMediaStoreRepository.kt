@@ -5,6 +5,9 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import com.air.cleaner.domain.cleaning.DuplicateGroup
+import com.air.cleaner.domain.cleaning.DuplicatePhotoDetector
+import com.air.cleaner.domain.cleaning.MediaItem
 import com.air.cleaner.domain.cleaning.MediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,24 +17,35 @@ class AndroidMediaStoreRepository(
 ) : MediaRepository {
     override suspend fun scanSummary(): MediaScanSummary = withContext(Dispatchers.IO) {
         val accumulator = MediaScanSummaryAccumulator()
-        scanCollection(
+        scanItems(
             uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
             mediaType = MediaType.Image,
-            accumulator = accumulator,
-        )
-        scanCollection(
+        ).forEach { itemWithPath ->
+            accumulator.add(itemWithPath.item, itemWithPath.relativePath)
+        }
+        scanItems(
             uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
             mediaType = MediaType.Video,
-            accumulator = accumulator,
-        )
+        ).forEach { itemWithPath ->
+            accumulator.add(itemWithPath.item, itemWithPath.relativePath)
+        }
         accumulator.summary()
     }
 
-    private fun scanCollection(
+    override suspend fun scanDuplicatePhotoGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
+        DuplicatePhotoDetector().findDuplicates(
+            scanItems(
+                uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                mediaType = MediaType.Image,
+            ).map { it.item },
+        )
+    }
+
+    private fun scanItems(
         uri: Uri,
         mediaType: MediaType,
-        accumulator: MediaScanSummaryAccumulator,
-    ) {
+    ): List<MediaItemWithPath> {
+        val items = mutableListOf<MediaItemWithPath>()
         contentResolver.query(
             uri,
             projection(),
@@ -43,10 +57,11 @@ class AndroidMediaStoreRepository(
                 val row = cursor.toMediaStoreRow()
                 val item = MediaStoreRowMapper.map(row, mediaType)
                 if (item != null) {
-                    accumulator.add(item, row.relativePath)
+                    items += MediaItemWithPath(item = item, relativePath = row.relativePath)
                 }
             }
         }
+        return items
     }
 
     private fun projection(): Array<String> {
@@ -90,4 +105,9 @@ class AndroidMediaStoreRepository(
         val index = getColumnIndex(columnName)
         return if (index >= 0 && !isNull(index)) getString(index) else null
     }
+
+    private data class MediaItemWithPath(
+        val item: MediaItem,
+        val relativePath: String?,
+    )
 }

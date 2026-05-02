@@ -69,12 +69,12 @@ import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.data.media.AndroidMediaStoreRepository
 import com.air.cleaner.data.media.MediaScanSummary
+import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
 import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
 import com.air.cleaner.feature.photos.PhotoReviewScreen
-import com.air.cleaner.feature.photos.previewDuplicateGroups
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -95,17 +95,22 @@ fun AIPhotoCleanerApp() {
 
         if (permissionState.canScanAnyMedia) {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
+            var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
 
             LaunchedEffect(context, permissionState.access) {
-                scanSummary = withContext(Dispatchers.IO) {
-                    AndroidMediaStoreRepository(context.contentResolver).scanSummary()
+                val scanResult = withContext(Dispatchers.IO) {
+                    val repository = AndroidMediaStoreRepository(context.contentResolver)
+                    repository.scanSummary() to repository.scanDuplicatePhotoGroups()
                 }
+                scanSummary = scanResult.first
+                duplicatePhotoGroups = scanResult.second
             }
 
             MainAppShell(
                 navigationState = navigationState,
                 scanSummary = scanSummary,
+                duplicatePhotoGroups = duplicatePhotoGroups,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = { navigationState = navigationState.openDuplicatePhotos() },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
@@ -125,6 +130,7 @@ fun AIPhotoCleanerApp() {
 private fun MainAppShell(
     navigationState: AppNavigationState,
     scanSummary: MediaScanSummary?,
+    duplicatePhotoGroups: List<DuplicateGroup>?,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onBackToPhotos: () -> Unit,
@@ -144,13 +150,14 @@ private fun MainAppShell(
             is AppScreen.Tab -> TabScreen(
                 tab = screen.tab,
                 scanSummary = scanSummary,
+                duplicatePhotoGroups = duplicatePhotoGroups,
                 onOpenDuplicatePhotos = onOpenDuplicatePhotos,
                 contentPadding = padding,
             )
             AppScreen.DuplicatePhotoReview -> Box(modifier = Modifier.padding(padding)) {
                 PhotoReviewScreen(
                     title = "Duplicate photos",
-                    groups = previewDuplicateGroups,
+                    groups = duplicatePhotoGroups.orEmpty(),
                     onBack = onBackToPhotos,
                     onContinue = {},
                 )
@@ -163,6 +170,7 @@ private fun MainAppShell(
 private fun TabScreen(
     tab: AppTab,
     scanSummary: MediaScanSummary?,
+    duplicatePhotoGroups: List<DuplicateGroup>?,
     onOpenDuplicatePhotos: () -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -174,6 +182,7 @@ private fun TabScreen(
         )
         AppTab.Photos -> PhotosTabScreen(
             scanSummary = scanSummary,
+            duplicatePhotoGroups = duplicatePhotoGroups,
             onOpenDuplicatePhotos = onOpenDuplicatePhotos,
             contentPadding = contentPadding,
         )
@@ -215,6 +224,7 @@ private fun CleanTabScreen(
 @Composable
 private fun PhotosTabScreen(
     scanSummary: MediaScanSummary?,
+    duplicatePhotoGroups: List<DuplicateGroup>?,
     onOpenDuplicatePhotos: () -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -224,8 +234,8 @@ private fun PhotosTabScreen(
         MetricRow(
             icon = Icons.Rounded.Image,
             title = "Duplicate photos",
-            subtitle = "Review exact copies and keep the best original",
-            metric = "Preview",
+            subtitle = "Review likely matches and keep the best original",
+            metric = duplicatePhotoGroups.toDuplicateMetricLabel(),
             onClick = onOpenDuplicatePhotos,
         )
         MetricRow(
@@ -505,6 +515,15 @@ private fun CleanupCategory.icon(): ImageVector {
 }
 
 @Composable
+private fun List<DuplicateGroup>?.toDuplicateMetricLabel(): String {
+    return when {
+        this == null -> stringResource(com.air.cleaner.feature.dashboard.R.string.dashboard_summary_scanning)
+        isEmpty() -> "0 found"
+        else -> formatBytes(sumOf { it.recoverableBytes })
+    }
+}
+
+@Composable
 private fun Int?.toScannedItemsLabel(): String {
     return if (this == null) {
         stringResource(com.air.cleaner.feature.dashboard.R.string.dashboard_summary_scanning)
@@ -627,6 +646,7 @@ private fun MainAppShellPreview() {
                 screenshotCount = 820,
                 screenshotBytes = 820_000_000L,
             ),
+            duplicatePhotoGroups = emptyList(),
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onBackToPhotos = {},

@@ -63,20 +63,24 @@ fun PhotoReviewScreen(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "${selectionState.selectedCount} selected · ${formatBytes(selectionState.selectedBytes)} recoverable",
+            text = "${selectionState.selectedCount} selected | ${formatBytes(selectionState.selectedBytes)} recoverable",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        groups.forEachIndexed { index, group ->
-            DuplicateGroupCard(
-                groupIndex = index + 1,
-                group = group,
-                selectionState = selectionState,
-                onToggle = { itemId ->
-                    selectionState = selectionState.toggle(itemId)
-                },
-            )
+        if (groups.isEmpty()) {
+            EmptyDuplicateReviewCard()
+        } else {
+            groups.forEachIndexed { index, group ->
+                DuplicateGroupCard(
+                    groupIndex = index + 1,
+                    group = group,
+                    selectionState = selectionState,
+                    onToggle = { itemId ->
+                        selectionState = selectionState.toggle(itemId)
+                    },
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -103,6 +107,32 @@ fun PhotoReviewScreen(
 }
 
 @Composable
+private fun EmptyDuplicateReviewCard(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "No duplicate photos found",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "We only show likely matches for review. Nothing is selected or deleted automatically.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun DuplicateGroupCard(
     groupIndex: Int,
     group: DuplicateGroup,
@@ -121,7 +151,7 @@ private fun DuplicateGroupCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "Group $groupIndex · ${group.items.size} photos",
+                text = "Group $groupIndex | ${group.items.size} photos",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -176,9 +206,9 @@ private fun PhotoReviewRow(
             )
             Text(
                 text = if (isRecommendedKeep) {
-                    "Recommended keep · ${formatBytes(item.sizeBytes)}"
+                    "Recommended keep | ${formatBytes(item.sizeBytes)}"
                 } else {
-                    "Duplicate · ${formatBytes(item.sizeBytes)}"
+                    "Duplicate | ${formatBytes(item.sizeBytes)}"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

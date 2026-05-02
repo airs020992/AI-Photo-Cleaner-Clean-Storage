@@ -11,17 +11,29 @@ object MediaStoreRowMapper {
             return null
         }
 
+        val dateMillis = row.dateTakenMillis ?: row.dateModifiedSeconds.toMillis()
         return MediaItem(
             id = row.id.toString(),
             displayName = displayName,
             sizeBytes = sizeBytes,
-            dateTakenMillis = row.dateTakenMillis ?: row.dateModifiedSeconds.toMillis(),
-            contentHash = null,
+            dateTakenMillis = dateMillis,
+            contentHash = row.duplicateCandidateKey(mediaType, sizeBytes, dateMillis),
             mediaType = mediaType,
         )
     }
 
     private fun Long?.toMillis(): Long {
         return this?.times(1_000L) ?: 0L
+    }
+
+    private fun MediaStoreRow.duplicateCandidateKey(
+        mediaType: MediaType,
+        sizeBytes: Long,
+        dateMillis: Long,
+    ): String? {
+        if (mediaType != MediaType.Image || dateMillis <= 0L) {
+            return null
+        }
+        return "image:$sizeBytes:$dateMillis"
     }
 }
