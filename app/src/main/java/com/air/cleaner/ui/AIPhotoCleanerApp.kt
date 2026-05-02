@@ -1,39 +1,72 @@
 package com.air.cleaner.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
+import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
+import com.air.cleaner.feature.onboarding.OnboardingScreen
 
 @Composable
 fun AIPhotoCleanerApp() {
     CleanerTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Free up space safely",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
-                Text(
-                    text = "Find duplicate photos, blurry shots, screenshots, and large videos. Nothing is deleted without your confirmation.",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-            Button(onClick = {}) {
-                Text("Scan my photos")
-            }
+        val context = LocalContext.current
+        var permissionState by remember {
+            mutableStateOf(context.currentMediaPermissionState())
         }
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions(),
+        ) {
+            permissionState = context.currentMediaPermissionState()
+        }
+
+        OnboardingScreen(
+            mediaAccess = permissionState.access,
+            onRequestPermission = {
+                permissionLauncher.launch(mediaPermissionsForCurrentDevice())
+            }
+        )
+    }
+}
+
+private fun android.content.Context.currentMediaPermissionState(): MediaPermissionState {
+    return MediaPermissionState(
+        sdkInt = Build.VERSION.SDK_INT,
+        readImagesGranted = hasPermission(Manifest.permission.READ_MEDIA_IMAGES),
+        readVideoGranted = hasPermission(Manifest.permission.READ_MEDIA_VIDEO),
+        visualUserSelectedGranted = if (Build.VERSION.SDK_INT >= 34) {
+            hasPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+        } else {
+            false
+        },
+        legacyReadGranted = hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE),
+    )
+}
+
+private fun android.content.Context.hasPermission(permission: String): Boolean {
+    return ContextCompat.checkSelfPermission(this, permission) == PERMISSION_GRANTED
+}
+
+private fun mediaPermissionsForCurrentDevice(): Array<String> {
+    return when {
+        Build.VERSION.SDK_INT >= 34 -> arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+        )
+        Build.VERSION.SDK_INT >= 33 -> arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+        )
+        else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 }
