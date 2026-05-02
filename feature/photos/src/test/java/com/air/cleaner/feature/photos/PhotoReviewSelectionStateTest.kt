@@ -82,11 +82,35 @@ class PhotoReviewSelectionStateTest {
         assertEquals(0L, afterToggle.selectedBytes)
     }
 
+    @Test
+    fun exposesSelectedItemsForDeleteConfirmation() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("keep", 3_000L, 100L, "content://images/keep"),
+                    mediaItem("delete-a", 2_000L, 200L, "content://images/delete-a"),
+                    mediaItem("delete-b", 1_000L, 300L, "content://images/delete-b"),
+                ),
+            ),
+        )
+
+        assertEquals(listOf("delete-a", "delete-b"), state.selectedItems.map { it.id }.sorted())
+        assertEquals(
+            listOf("content://images/delete-a", "content://images/delete-b"),
+            state.selectedContentUris.sorted(),
+        )
+    }
+
     private fun duplicateGroup(vararg items: MediaItem): DuplicateGroup {
         return DuplicateGroup(key = "group", items = items.toList())
     }
 
-    private fun mediaItem(id: String, sizeBytes: Long, dateTakenMillis: Long): MediaItem {
+    private fun mediaItem(
+        id: String,
+        sizeBytes: Long,
+        dateTakenMillis: Long,
+        contentUri: String? = null,
+    ): MediaItem {
         return MediaItem(
             id = id,
             displayName = "$id.jpg",
@@ -94,6 +118,7 @@ class PhotoReviewSelectionStateTest {
             dateTakenMillis = dateTakenMillis,
             contentHash = id,
             mediaType = MediaType.Image,
+            contentUri = contentUri,
         )
     }
 }

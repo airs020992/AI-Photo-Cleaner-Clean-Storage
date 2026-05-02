@@ -1,16 +1,20 @@
 package com.air.cleaner.feature.photos
 
 import com.air.cleaner.domain.cleaning.DuplicateGroup
+import com.air.cleaner.domain.cleaning.MediaItem
 
 data class PhotoReviewSelectionState(
     private val groups: List<DuplicateGroup>,
     private val selectedIds: Set<String>,
 ) {
-    val selectedCount: Int = selectedIds.size
-    val selectedBytes: Long = groups
+    val selectedItems: List<MediaItem> = groups
         .flatMap { it.items }
         .filter { it.id in selectedIds }
-        .sumOf { it.sizeBytes }
+
+    val selectedContentUris: List<String> = selectedItems.mapNotNull { it.contentUri }
+
+    val selectedCount: Int = selectedIds.size
+    val selectedBytes: Long = selectedItems.sumOf { it.sizeBytes }
 
     fun isSelectedForDeletion(itemId: String): Boolean {
         return itemId in selectedIds

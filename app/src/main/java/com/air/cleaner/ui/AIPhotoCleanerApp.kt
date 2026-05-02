@@ -1,8 +1,12 @@
 package com.air.cleaner.ui
 
 import android.Manifest
+import android.app.Activity
+import android.content.IntentSender
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -74,6 +78,9 @@ import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
 import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
+import com.air.cleaner.feature.photos.PhotoDeleteConfirmationDialog
+import com.air.cleaner.feature.photos.PhotoDeleteResultDialog
+import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -97,8 +104,20 @@ fun AIPhotoCleanerApp() {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
+            var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var deleteResultSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var scanRefreshKey by remember { mutableStateOf(0) }
+            val deleteLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartIntentSenderForResult(),
+            ) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    deleteResultSummary = pendingDeleteSummary
+                    scanRefreshKey += 1
+                }
+                pendingDeleteSummary = null
+            }
 
-            LaunchedEffect(context, permissionState.access) {
+            LaunchedEffect(context, permissionState.access, scanRefreshKey) {
                 val scanResult = withContext(Dispatchers.IO) {
                     val repository = AndroidMediaStoreRepository(context.contentResolver)
                     repository.scanSummary() to repository.scanDuplicatePhotoGroups()
@@ -114,6 +133,16 @@ fun AIPhotoCleanerApp() {
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = { navigationState = navigationState.openDuplicatePhotos() },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
+                pendingDeleteSummary = pendingDeleteSummary,
+                deleteResultSummary = deleteResultSummary,
+                onRequestDeleteConfirmation = { pendingDeleteSummary = it },
+                onDismissDeleteConfirmation = { pendingDeleteSummary = null },
+                onConfirmDelete = { summary ->
+                    context.createSystemDeleteRequest(summary.contentUris)?.let { sender ->
+                        deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
+                    }
+                },
+                onDismissDeleteResult = { deleteResultSummary = null },
             )
         } else {
             OnboardingScreen(
@@ -134,6 +163,12 @@ private fun MainAppShell(
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onBackToPhotos: () -> Unit,
+    pendingDeleteSummary: PhotoDeletionSummary?,
+    deleteResultSummary: PhotoDeletionSummary?,
+    onRequestDeleteConfirmation: (PhotoDeletionSummary) -> Unit,
+    onDismissDeleteConfirmation: () -> Unit,
+    onConfirmDelete: (PhotoDeletionSummary) -> Unit,
+    onDismissDeleteResult: () -> Unit,
 ) {
     Scaffold(
         containerColor = Color(0xFFF6F8FA),
@@ -159,9 +194,27 @@ private fun MainAppShell(
                     title = "Duplicate photos",
                     groups = duplicatePhotoGroups.orEmpty(),
                     onBack = onBackToPhotos,
-                    onContinue = {},
+                    onContinue = { selectionState ->
+                        onRequestDeleteConfirmation(
+                            PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                        )
+                    },
                 )
             }
+        }
+        pendingDeleteSummary?.let { summary ->
+            PhotoDeleteConfirmationDialog(
+                summary = summary,
+                onDismiss = onDismissDeleteConfirmation,
+                onConfirmDelete = { onConfirmDelete(summary) },
+            )
+        }
+        deleteResultSummary?.let { summary ->
+            PhotoDeleteResultDialog(
+                deletedCount = summary.itemCount,
+                freedBytes = summary.bytesToDelete,
+                onDone = onDismissDeleteResult,
+            )
         }
     }
 }
@@ -632,6 +685,16 @@ private fun mediaPermissionsForCurrentDevice(): Array<String> {
     }
 }
 
+private fun android.content.Context.createSystemDeleteRequest(contentUris: List<String>): IntentSender? {
+    if (Build.VERSION.SDK_INT < 30 || contentUris.isEmpty()) {
+        return null
+    }
+    return android.provider.MediaStore.createDeleteRequest(
+        contentResolver,
+        contentUris.map { Uri.parse(it) },
+    ).intentSender
+}
+
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun MainAppShellPreview() {
@@ -650,6 +713,12 @@ private fun MainAppShellPreview() {
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onBackToPhotos = {},
+            pendingDeleteSummary = null,
+            deleteResultSummary = null,
+            onRequestDeleteConfirmation = {},
+            onDismissDeleteConfirmation = {},
+            onConfirmDelete = {},
+            onDismissDeleteResult = {},
         )
     }
 }

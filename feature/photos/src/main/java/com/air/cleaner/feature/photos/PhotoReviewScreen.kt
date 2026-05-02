@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -106,6 +108,73 @@ fun PhotoReviewScreen(
             }
         }
     }
+}
+
+@Composable
+fun PhotoDeleteConfirmationDialog(
+    summary: PhotoDeletionSummary,
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Delete selected photos?")
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "${summary.itemCount} photos | ${formatBytes(summary.bytesToDelete)} will be freed",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Android will show a system confirmation before anything is removed. Originals stay untouched if you cancel.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = summary.canRequestSystemDelete,
+                onClick = onConfirmDelete,
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+@Composable
+fun PhotoDeleteResultDialog(
+    deletedCount: Int,
+    freedBytes: Long,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDone,
+        title = {
+            Text("Cleanup complete")
+        },
+        text = {
+            Text("$deletedCount photos removed | ${formatBytes(freedBytes)} freed")
+        },
+        confirmButton = {
+            Button(onClick = onDone) {
+                Text("Done")
+            }
+        },
+    )
 }
 
 @Composable
