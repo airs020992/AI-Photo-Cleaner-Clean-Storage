@@ -36,7 +36,9 @@ data class PhotoReviewSelectionState(
     companion object {
         fun fromGroups(groups: List<DuplicateGroup>): PhotoReviewSelectionState {
             val selectedIds = groups
-                .flatMap { group -> group.items.sortedBy { it.dateTakenMillis }.drop(1) }
+                .flatMap { group ->
+                    group.items.filterNot { item -> item.id == group.recommendedKeep.id }
+                }
                 .map { it.id }
                 .toSet()
             return PhotoReviewSelectionState(groups = groups, selectedIds = selectedIds)

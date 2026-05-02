@@ -27,6 +27,25 @@ class PhotoReviewSelectionStateTest {
     }
 
     @Test
+    fun defaultsToKeepingTheGroupRecommendedItem() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("small-old", 1_000L, 100L),
+                    mediaItem("large-new", 3_000L, 200L),
+                    mediaItem("medium-newer", 2_000L, 300L),
+                ),
+            ),
+        )
+
+        assertTrue(state.isSelectedForDeletion("small-old"))
+        assertFalse(state.isSelectedForDeletion("large-new"))
+        assertTrue(state.isSelectedForDeletion("medium-newer"))
+        assertEquals(2, state.selectedCount)
+        assertEquals(3_000L, state.selectedBytes)
+    }
+
+    @Test
     fun preventsSelectingEveryItemInAGroupForDeletion() {
         val state = PhotoReviewSelectionState.fromGroups(
             groups = listOf(

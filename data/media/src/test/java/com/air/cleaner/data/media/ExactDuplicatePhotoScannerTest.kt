@@ -51,6 +51,24 @@ class ExactDuplicatePhotoScannerTest {
         assertTrue(requestedKeys.isEmpty())
     }
 
+    @Test
+    fun keepsOriginalContentUriForThumbnailRendering() {
+        val scanner = ExactDuplicatePhotoScanner(
+            contentFingerprint = { "same-hash" },
+        )
+        val candidates = listOf(
+            candidate("1", "content://media/images/1", sizeBytes = 100),
+            candidate("2", "content://media/images/2", sizeBytes = 100),
+        )
+
+        val groupedItems = scanner.findDuplicateGroups(candidates).single().items
+
+        assertEquals(
+            listOf("content://media/images/1", "content://media/images/2"),
+            groupedItems.mapNotNull { it.contentUri }.sorted(),
+        )
+    }
+
     private fun candidate(
         id: String,
         contentKey: String,
@@ -64,6 +82,7 @@ class ExactDuplicatePhotoScannerTest {
                 dateTakenMillis = 1_000L,
                 contentHash = null,
                 mediaType = MediaType.Image,
+                contentUri = contentKey,
             ),
             contentKey = contentKey,
         )

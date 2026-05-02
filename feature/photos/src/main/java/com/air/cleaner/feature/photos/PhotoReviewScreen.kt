@@ -28,10 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
@@ -191,11 +193,20 @@ private fun PhotoReviewRow(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = item.displayName.take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+            if (item.contentUri != null) {
+                AsyncImage(
+                    model = item.contentUri,
+                    contentDescription = item.displayName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Text(
+                    text = item.displayName.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(

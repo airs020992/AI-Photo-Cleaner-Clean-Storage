@@ -7,6 +7,7 @@ data class MediaItem(
     val dateTakenMillis: Long,
     val contentHash: String?,
     val mediaType: MediaType,
+    val contentUri: String? = null,
 )
 
 enum class MediaType {

@@ -71,10 +71,13 @@ class AndroidMediaStoreRepository(
                 val row = cursor.toMediaStoreRow()
                 val item = MediaStoreRowMapper.map(row, mediaType)
                 if (item != null) {
+                    val contentUri = ContentUris.withAppendedId(uri, row.id)
                     items += MediaItemWithPath(
-                        item = item,
+                        item = item.copy(
+                            contentUri = contentUri.toString(),
+                        ),
                         relativePath = row.relativePath,
-                        contentUri = ContentUris.withAppendedId(uri, row.id),
+                        contentUri = contentUri,
                     )
                 }
             }
