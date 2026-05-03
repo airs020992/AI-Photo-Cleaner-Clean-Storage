@@ -23,6 +23,21 @@ class PhotoDeletionSummaryTest {
     }
 
     @Test
+    fun exposesDeleteConfirmationTrustCopy() {
+        val summary = PhotoDeletionSummary.fromItems(
+            listOf(
+                mediaItem("a", 1_000L, "content://images/a"),
+                mediaItem("b", 2_000L, "content://images/b"),
+            ),
+        )
+
+        assertEquals("2 selected", summary.itemCountLabel)
+        assertEquals("Android confirmation required", summary.systemConfirmationLabel)
+        assertEquals("Cancel keeps your current selection", summary.cancelSafetyLabel)
+        assertEquals(null, summary.blockedReason)
+    }
+
+    @Test
     fun blocksSystemDeleteWhenSelectedItemsDoNotHaveContentUris() {
         val summary = PhotoDeletionSummary.fromItems(
             listOf(mediaItem("a", 1_000L, null)),
@@ -32,6 +47,7 @@ class PhotoDeletionSummaryTest {
         assertEquals(1_000L, summary.bytesToDelete)
         assertTrue(summary.contentUris.isEmpty())
         assertTrue(!summary.canRequestSystemDelete)
+        assertEquals("1 selected photo is missing Android delete access.", summary.blockedReason)
     }
 
     private fun mediaItem(

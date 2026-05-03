@@ -286,14 +286,33 @@ fun PhotoDeleteConfirmationDialog(
             Text("Delete selected photos?")
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    DeleteConfirmationMetric(
+                        value = summary.itemCountLabel,
+                        label = "Photos",
+                        modifier = Modifier.weight(1f),
+                    )
+                    DeleteConfirmationMetric(
+                        value = formatBytes(summary.bytesToDelete),
+                        label = "Recoverable",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                DeleteConfirmationTrustLine(summary.systemConfirmationLabel)
+                DeleteConfirmationTrustLine(summary.cancelSafetyLabel)
+                summary.blockedReason?.let { reason ->
+                    Text(
+                        text = reason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Text(
-                    text = "${summary.itemCount} photos | ${formatBytes(summary.bytesToDelete)} will be freed",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Android will show a system confirmation before anything is removed. Originals stay untouched if you cancel.",
+                    text = "Nothing is removed until you approve Android's system delete request.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -312,6 +331,49 @@ fun PhotoDeleteConfirmationDialog(
                 Text("Cancel")
             }
         },
+    )
+}
+
+@Composable
+private fun DeleteConfirmationMetric(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeleteConfirmationTrustLine(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
