@@ -321,6 +321,7 @@ private fun MainAppShell(
                 scanSummary = scanSummary,
                 duplicatePhotoGroups = duplicatePhotoGroups,
                 similarScreenshotGroups = similarScreenshotGroups,
+                similarScreenshotReviewStatus = similarScreenshotReviewStatus,
                 onOpenDuplicatePhotos = onOpenDuplicatePhotos,
                 onOpenSimilarScreenshots = onOpenSimilarScreenshots,
                 contentPadding = padding,
@@ -465,6 +466,7 @@ private fun TabScreen(
     scanSummary: MediaScanSummary?,
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
+    similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
     contentPadding: PaddingValues,
@@ -482,6 +484,7 @@ private fun TabScreen(
             scanSummary = scanSummary,
             duplicatePhotoGroups = duplicatePhotoGroups,
             similarScreenshotGroups = similarScreenshotGroups,
+            similarScreenshotReviewStatus = similarScreenshotReviewStatus,
             onOpenDuplicatePhotos = onOpenDuplicatePhotos,
             onOpenSimilarScreenshots = onOpenSimilarScreenshots,
             contentPadding = contentPadding,
@@ -538,10 +541,16 @@ private fun PhotosTabScreen(
     scanSummary: MediaScanSummary?,
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
+    similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
     contentPadding: PaddingValues,
 ) {
+    val similarPhotosEntry = similarPhotosEntryState(
+        groups = similarScreenshotGroups,
+        reviewStatus = similarScreenshotReviewStatus,
+        formatBytes = ::formatBytes,
+    )
     ScreenColumn(contentPadding = contentPadding) {
         TopHeader(title = "Photos", action = "Sort")
         FilterChips(labels = listOf("Duplicates", "Similar", "Blurry", "Screenshots"))
@@ -555,8 +564,8 @@ private fun PhotosTabScreen(
         MetricRow(
             icon = Icons.Rounded.AutoAwesome,
             title = "Similar photos",
-            subtitle = "Near-identical screenshots grouped for manual review",
-            metric = similarScreenshotGroups.toDuplicateMetricLabel(),
+            subtitle = similarPhotosEntry.subtitle,
+            metric = similarPhotosEntry.metric,
             onClick = onOpenSimilarScreenshots,
         )
         MetricRow(
