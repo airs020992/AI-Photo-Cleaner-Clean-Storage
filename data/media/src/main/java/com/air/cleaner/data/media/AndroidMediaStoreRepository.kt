@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 class AndroidMediaStoreRepository(
     private val contentResolver: ContentResolver,
     private val similarScreenshotFingerprintCache: PerceptualFingerprintCache = InMemoryPerceptualFingerprintCache(),
+    private val similarScreenshotResultCache: SimilarScreenshotResultCache = InMemorySimilarScreenshotResultCache(),
 ) : MediaRepository {
     override suspend fun scanSummary(): MediaScanSummary = withContext(Dispatchers.IO) {
         val accumulator = MediaScanSummaryAccumulator()
@@ -74,6 +75,14 @@ class AndroidMediaStoreRepository(
                 )
             },
         )
+    }
+
+    override suspend fun cachedSimilarScreenshotGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
+        similarScreenshotResultCache.load()
+    }
+
+    override suspend fun saveSimilarScreenshotGroups(groups: List<DuplicateGroup>) = withContext(Dispatchers.IO) {
+        similarScreenshotResultCache.save(groups)
     }
 
     override suspend fun contentUrisStillPresent(contentUris: List<String>): List<String> = withContext(Dispatchers.IO) {

@@ -75,6 +75,7 @@ import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.data.media.AndroidMediaStoreRepository
 import com.air.cleaner.data.media.MediaScanSummary
 import com.air.cleaner.data.media.SharedPreferencesPerceptualFingerprintCache
+import com.air.cleaner.data.media.SharedPreferencesSimilarScreenshotResultCache
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
@@ -140,7 +141,11 @@ fun AIPhotoCleanerApp() {
                 val repository = AndroidMediaStoreRepository(
                     contentResolver = context.contentResolver,
                     similarScreenshotFingerprintCache = SharedPreferencesPerceptualFingerprintCache(context),
+                    similarScreenshotResultCache = SharedPreferencesSimilarScreenshotResultCache(context),
                 )
+                similarScreenshotGroups = withContext(Dispatchers.IO) {
+                    repository.cachedSimilarScreenshotGroups()
+                }.takeIf { it.isNotEmpty() } ?: similarScreenshotGroups
                 scanStatus = MediaScanStatus(MediaScanPhase.CountingLibrary)
                 scanSummary = withContext(Dispatchers.IO) {
                     repository.scanSummary()
@@ -151,6 +156,9 @@ fun AIPhotoCleanerApp() {
                 )
                 similarScreenshotGroups = withContext(Dispatchers.IO) {
                     repository.scanSimilarScreenshotGroups()
+                }
+                withContext(Dispatchers.IO) {
+                    repository.saveSimilarScreenshotGroups(similarScreenshotGroups.orEmpty())
                 }
                 scanStatus = MediaScanStatus(
                     phase = MediaScanPhase.FindingDuplicatePhotos,
