@@ -136,6 +136,21 @@ internal class CompositeCleanerTelemetry(
     }
 }
 
+internal class AnalyticsDiagnosticsTelemetry(
+    private val maxEvents: Int = 5,
+    private val onEventsChanged: (List<CleanerTelemetryEvent>) -> Unit,
+) : CleanerTelemetry {
+    private val recentEvents = ArrayDeque<CleanerTelemetryEvent>()
+
+    override fun track(event: CleanerTelemetryEvent) {
+        recentEvents.addFirst(event)
+        while (recentEvents.size > maxEvents) {
+            recentEvents.removeLast()
+        }
+        onEventsChanged(recentEvents.toList())
+    }
+}
+
 private fun Map<String, Any>.toFirebaseBundle(): Bundle {
     return Bundle().apply {
         forEach { (key, value) ->

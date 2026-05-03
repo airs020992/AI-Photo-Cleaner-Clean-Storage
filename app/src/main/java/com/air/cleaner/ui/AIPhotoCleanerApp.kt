@@ -54,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,6 +75,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
+import com.air.cleaner.BuildConfig
 import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.data.media.AndroidMediaStoreRepository
@@ -118,6 +120,13 @@ fun AIPhotoCleanerApp() {
             var analyticsEnabled by remember {
                 mutableStateOf(context.cleanerPreferences().analyticsEnabled())
             }
+            val analyticsDiagnosticsEvents = remember { mutableStateListOf<CleanerTelemetryEvent>() }
+            val analyticsDiagnosticsTelemetry = remember {
+                AnalyticsDiagnosticsTelemetry { events ->
+                    analyticsDiagnosticsEvents.clear()
+                    analyticsDiagnosticsEvents.addAll(events)
+                }
+            }
             val analyticsPrivacyController = remember {
                 FirebaseAnalyticsPrivacyController(
                     FirebaseAnalyticsCollectionAdapter(FirebaseAnalytics.getInstance(context)),
@@ -129,6 +138,7 @@ fun AIPhotoCleanerApp() {
                         CompositeCleanerTelemetry(
                             FirebaseCleanerTelemetry(FirebaseAnalytics.getInstance(context)),
                             LogcatCleanerTelemetry(),
+                            analyticsDiagnosticsTelemetry,
                         ),
                     ),
                     analyticsEnabled = { analyticsEnabled },
@@ -281,6 +291,7 @@ fun AIPhotoCleanerApp() {
                 similarScreenshotReviewStatus = similarScreenshotReviewStatus,
                 telemetry = telemetry,
                 analyticsEnabled = analyticsEnabled,
+                analyticsDiagnosticsEvents = analyticsDiagnosticsEvents,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = {
                     navigationState = navigationState.openDuplicatePhotos(
@@ -363,6 +374,7 @@ private fun MainAppShell(
     similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     telemetry: CleanerTelemetry,
     analyticsEnabled: Boolean,
+    analyticsDiagnosticsEvents: List<CleanerTelemetryEvent>,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
@@ -397,6 +409,7 @@ private fun MainAppShell(
                 similarScreenshotGroups = similarScreenshotGroups,
                 similarScreenshotReviewStatus = similarScreenshotReviewStatus,
                 analyticsEnabled = analyticsEnabled,
+                analyticsDiagnosticsEvents = analyticsDiagnosticsEvents,
                 onOpenDuplicatePhotos = onOpenDuplicatePhotos,
                 onOpenSimilarScreenshots = onOpenSimilarScreenshots,
                 onAnalyticsEnabledChange = onAnalyticsEnabledChange,
@@ -559,6 +572,7 @@ private fun TabScreen(
     similarScreenshotGroups: List<DuplicateGroup>?,
     similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     analyticsEnabled: Boolean,
+    analyticsDiagnosticsEvents: List<CleanerTelemetryEvent>,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
     onAnalyticsEnabledChange: (Boolean) -> Unit,
@@ -588,6 +602,7 @@ private fun TabScreen(
         )
         AppTab.Settings -> SettingsTabScreen(
             analyticsEnabled = analyticsEnabled,
+            analyticsDiagnosticsEvents = analyticsDiagnosticsEvents,
             onAnalyticsEnabledChange = onAnalyticsEnabledChange,
             contentPadding = contentPadding,
         )
@@ -702,6 +717,7 @@ private fun VideosTabScreen(
 @Composable
 private fun SettingsTabScreen(
     analyticsEnabled: Boolean,
+    analyticsDiagnosticsEvents: List<CleanerTelemetryEvent>,
     onAnalyticsEnabledChange: (Boolean) -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -747,6 +763,42 @@ private fun SettingsTabScreen(
                     checked = analyticsEnabled,
                     onCheckedChange = onAnalyticsEnabledChange,
                 )
+            }
+        }
+        if (BuildConfig.DEBUG) {
+            PremiumSurface {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Analytics diagnostics",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = if (analyticsEnabled) {
+                            "Product analytics is enabled. Showing the last ${analyticsDiagnosticsEvents.size} local events."
+                        } else {
+                            "Product analytics is off. Events should stay empty until enabled."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (analyticsDiagnosticsEvents.isEmpty()) {
+                        Text(
+                            text = "No local analytics events recorded in this session.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        analyticsDiagnosticsEvents.forEach { event ->
+                            Text(
+                                text = "${event.name} | ${event.properties.toDiagnosticsLabel()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
             }
         }
         listOf("Language", "Subscription", "Privacy", "Restore purchases", "Scan rules").forEach {
@@ -1055,6 +1107,10 @@ private fun formatBytes(bytes: Long): String {
     return String.format("%.1f GB", gigabytes)
 }
 
+private fun Map<String, Any>.toDiagnosticsLabel(): String {
+    return entries.joinToString(separator = ", ") { (key, value) -> "$key=$value" }
+}
+
 private fun android.content.Context.currentMediaPermissionState(): MediaPermissionState {
     return MediaPermissionState(
         sdkInt = Build.VERSION.SDK_INT,
@@ -1128,6 +1184,7 @@ private fun MainAppShellPreview() {
             similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh,
             telemetry = NoOpCleanerTelemetry,
             analyticsEnabled = false,
+            analyticsDiagnosticsEvents = emptyList(),
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onOpenSimilarScreenshots = {},
