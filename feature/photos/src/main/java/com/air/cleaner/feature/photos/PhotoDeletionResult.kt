@@ -6,6 +6,17 @@ data class PhotoDeletionResult(
     val bytes: Long,
 ) {
     val shouldRefreshScan: Boolean = status == PhotoDeletionStatus.Deleted
+    val title: String = when (status) {
+        PhotoDeletionStatus.Deleted -> "Cleanup complete"
+        PhotoDeletionStatus.Canceled -> "Deletion canceled"
+        PhotoDeletionStatus.Blocked -> "Deletion needs attention"
+    }
+    val primaryActionLabel: String = when (status) {
+        PhotoDeletionStatus.Deleted -> "Review remaining"
+        PhotoDeletionStatus.Canceled,
+        PhotoDeletionStatus.Blocked,
+        -> "Back to review"
+    }
 
     companion object {
         fun fromSystemResult(

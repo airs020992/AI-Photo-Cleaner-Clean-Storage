@@ -19,6 +19,8 @@ class PhotoDeletionResultTest {
         assertEquals(2, result.itemCount)
         assertEquals(3_000L, result.bytes)
         assertTrue(result.shouldRefreshScan)
+        assertEquals("Cleanup complete", result.title)
+        assertEquals("Review remaining", result.primaryActionLabel)
     }
 
     @Test
@@ -35,6 +37,8 @@ class PhotoDeletionResultTest {
         assertEquals(2, result.itemCount)
         assertEquals(3_000L, result.bytes)
         assertTrue(!result.shouldRefreshScan)
+        assertEquals("Deletion canceled", result.title)
+        assertEquals("Back to review", result.primaryActionLabel)
     }
 
     @Test
@@ -51,5 +55,7 @@ class PhotoDeletionResultTest {
         assertEquals(1, result.itemCount)
         assertEquals(1_000L, result.bytes)
         assertTrue(!result.shouldRefreshScan)
+        assertEquals("Deletion needs attention", result.title)
+        assertEquals("Back to review", result.primaryActionLabel)
     }
 }

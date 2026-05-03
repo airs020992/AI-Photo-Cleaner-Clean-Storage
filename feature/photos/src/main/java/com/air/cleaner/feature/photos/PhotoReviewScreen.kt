@@ -387,26 +387,39 @@ fun PhotoDeleteResultDialog(
         modifier = modifier,
         onDismissRequest = onDone,
         title = {
-            Text(
-                text = when (result.status) {
-                    PhotoDeletionStatus.Deleted -> "Cleanup complete"
-                    PhotoDeletionStatus.Canceled -> "Deletion canceled"
-                    PhotoDeletionStatus.Blocked -> "Deletion needs attention"
-                },
-            )
+            Text(result.title)
         },
         text = {
-            Text(
-                text = when (result.status) {
-                    PhotoDeletionStatus.Deleted -> "${result.itemCount} photos removed | ${formatBytes(result.bytes)} freed"
-                    PhotoDeletionStatus.Canceled -> "No photos were removed. Your previous selection is still available for review."
-                    PhotoDeletionStatus.Blocked -> "No photos were removed because Android could not open a system delete request for this selection."
-                },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    DeleteConfirmationMetric(
+                        value = result.itemCount.toString(),
+                        label = if (result.status == PhotoDeletionStatus.Deleted) "Removed" else "Selected",
+                        modifier = Modifier.weight(1f),
+                    )
+                    DeleteConfirmationMetric(
+                        value = formatBytes(result.bytes),
+                        label = if (result.status == PhotoDeletionStatus.Deleted) "Freed" else "Protected",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(
+                    text = when (result.status) {
+                        PhotoDeletionStatus.Deleted -> "Your library was refreshed. Continue reviewing any remaining duplicate groups."
+                        PhotoDeletionStatus.Canceled -> "No photos were removed. Your previous selection is still available for review."
+                        PhotoDeletionStatus.Blocked -> "No photos were removed because Android could not open a system delete request for this selection."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         },
         confirmButton = {
             Button(onClick = onDone) {
-                Text("Done")
+                Text(result.primaryActionLabel)
             }
         },
     )
