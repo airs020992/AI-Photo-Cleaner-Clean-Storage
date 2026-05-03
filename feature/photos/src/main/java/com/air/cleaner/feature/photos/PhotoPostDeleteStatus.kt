@@ -7,6 +7,7 @@ data class PhotoPostDeleteStatus(
     val message: String,
     val remainingGroupCount: Int,
     val remainingRecoverableBytes: Long,
+    val metrics: List<PhotoPostDeleteMetric> = emptyList(),
 ) {
     companion object {
         fun from(reconciliation: PhotoDeleteReconciliation?): PhotoPostDeleteStatus? {
@@ -29,6 +30,15 @@ data class PhotoPostDeleteStatus(
                 },
                 remainingGroupCount = reconciliation.remainingGroupCount,
                 remainingRecoverableBytes = reconciliation.remainingRecoverableBytes,
+                metrics = listOf(
+                    PhotoPostDeleteMetric("Requested", reconciliation.requestedItemCount.toString()),
+                    PhotoPostDeleteMetric("Deleted", reconciliation.resolvedItemCount.toString()),
+                    PhotoPostDeleteMetric("Still exists", reconciliation.stillExistsCount.toString()),
+                    PhotoPostDeleteMetric(
+                        "Remaining duplicates",
+                        "${reconciliation.remainingGroupCount} ${if (reconciliation.remainingGroupCount == 1) "group" else "groups"}",
+                    ),
+                ),
             )
         }
 
@@ -63,3 +73,8 @@ data class PhotoPostDeleteStatus(
         }
     }
 }
+
+data class PhotoPostDeleteMetric(
+    val label: String,
+    val value: String,
+)

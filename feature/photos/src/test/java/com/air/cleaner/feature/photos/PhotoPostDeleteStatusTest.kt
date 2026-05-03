@@ -124,6 +124,33 @@ class PhotoPostDeleteStatusTest {
         assertEquals(0L, status?.remainingRecoverableBytes)
     }
 
+    @Test
+    fun exposesProductionMetricsForDeleteResultDetails() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 5,
+                requestedBytes = 5_000L,
+                resolvedItemCount = 3,
+                stillExistsCount = 2,
+                stillExistingUris = listOf("content://images/d", "content://images/e"),
+                stillNeedsReviewCount = 1,
+                stillNeedsReviewUris = listOf("content://images/e"),
+                remainingGroupCount = 2,
+                remainingRecoverableBytes = 2_000L,
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                PhotoPostDeleteMetric("Requested", "5"),
+                PhotoPostDeleteMetric("Deleted", "3"),
+                PhotoPostDeleteMetric("Still exists", "2"),
+                PhotoPostDeleteMetric("Remaining duplicates", "2 groups"),
+            ),
+            status?.metrics,
+        )
+    }
+
     private fun duplicateGroup(vararg ids: String): DuplicateGroup {
         return DuplicateGroup(
             key = ids.joinToString(),
