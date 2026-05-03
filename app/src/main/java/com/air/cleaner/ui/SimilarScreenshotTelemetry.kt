@@ -34,14 +34,16 @@ internal object NoOpCleanerTelemetry : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) = Unit
 }
 
-internal class ConsentAwareCleanerTelemetry(
-    private val delegate: CleanerTelemetry,
+internal class ProductAnalyticsWithDiagnosticsTelemetry(
+    private val productTelemetry: CleanerTelemetry,
+    private val diagnosticsTelemetry: CleanerTelemetry,
     private val analyticsEnabled: () -> Boolean,
 ) : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
         if (analyticsEnabled()) {
-            delegate.track(event)
+            productTelemetry.track(event)
         }
+        diagnosticsTelemetry.track(event)
     }
 }
 

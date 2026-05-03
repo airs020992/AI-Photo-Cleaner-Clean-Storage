@@ -141,13 +141,15 @@ fun AIPhotoCleanerApp() {
                 )
             }
             val telemetry = remember {
-                ConsentAwareCleanerTelemetry(
-                    delegate = SafeCleanerTelemetry(
+                ProductAnalyticsWithDiagnosticsTelemetry(
+                    productTelemetry = SafeCleanerTelemetry(
                         CompositeCleanerTelemetry(
                             FirebaseCleanerTelemetry(FirebaseAnalytics.getInstance(context)),
                             LogcatCleanerTelemetry(),
-                            analyticsDiagnosticsTelemetry,
                         ),
+                    ),
+                    diagnosticsTelemetry = SafeCleanerTelemetry(
+                        analyticsDiagnosticsTelemetry,
                     ),
                     analyticsEnabled = { analyticsEnabled },
                 )

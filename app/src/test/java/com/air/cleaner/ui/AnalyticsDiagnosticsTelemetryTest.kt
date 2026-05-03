@@ -5,6 +5,40 @@ import org.junit.Test
 
 class AnalyticsDiagnosticsTelemetryTest {
     @Test
+    fun productAnalyticsOptOutStillRecordsLocalDiagnostics() {
+        val productEvents = mutableListOf<CleanerTelemetryEvent>()
+        val diagnosticsEvents = mutableListOf<CleanerTelemetryEvent>()
+        val telemetry = ProductAnalyticsWithDiagnosticsTelemetry(
+            productTelemetry = RecordingCleanerTelemetry(productEvents),
+            diagnosticsTelemetry = RecordingCleanerTelemetry(diagnosticsEvents),
+            analyticsEnabled = { false },
+        )
+        val event = CleanerTelemetryEvent("similar_screenshots_entry_tapped", mapOf("groups_loaded" to false))
+
+        telemetry.track(event)
+
+        assertEquals(emptyList<CleanerTelemetryEvent>(), productEvents)
+        assertEquals(listOf(event), diagnosticsEvents)
+    }
+
+    @Test
+    fun productAnalyticsOptInRecordsProductAnalyticsAndLocalDiagnostics() {
+        val productEvents = mutableListOf<CleanerTelemetryEvent>()
+        val diagnosticsEvents = mutableListOf<CleanerTelemetryEvent>()
+        val telemetry = ProductAnalyticsWithDiagnosticsTelemetry(
+            productTelemetry = RecordingCleanerTelemetry(productEvents),
+            diagnosticsTelemetry = RecordingCleanerTelemetry(diagnosticsEvents),
+            analyticsEnabled = { true },
+        )
+        val event = CleanerTelemetryEvent("similar_screenshots_entry_tapped", mapOf("groups_loaded" to true))
+
+        telemetry.track(event)
+
+        assertEquals(listOf(event), productEvents)
+        assertEquals(listOf(event), diagnosticsEvents)
+    }
+
+    @Test
     fun recorderKeepsMostRecentEventsFirstWithinLimit() {
         val snapshots = mutableListOf<List<CleanerTelemetryEvent>>()
         val telemetry = AnalyticsDiagnosticsTelemetry(
@@ -106,5 +140,13 @@ class AnalyticsDiagnosticsTelemetryTest {
             """.trimIndent(),
             shareContent.text,
         )
+    }
+}
+
+private class RecordingCleanerTelemetry(
+    private val events: MutableList<CleanerTelemetryEvent>,
+) : CleanerTelemetry {
+    override fun track(event: CleanerTelemetryEvent) {
+        events += event
     }
 }

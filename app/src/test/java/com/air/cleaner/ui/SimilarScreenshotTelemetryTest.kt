@@ -40,30 +40,37 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
-    fun consentAwareTelemetryDropsEventsWhenAnalyticsIsDisabled() {
-        val recordingTelemetry = RecordingCleanerTelemetry()
-        val telemetry = ConsentAwareCleanerTelemetry(
-            delegate = recordingTelemetry,
+    fun productAnalyticsWithDiagnosticsDropsProductEventsWhenAnalyticsIsDisabled() {
+        val productTelemetry = RecordingCleanerTelemetry()
+        val diagnosticsTelemetry = RecordingCleanerTelemetry()
+        val telemetry = ProductAnalyticsWithDiagnosticsTelemetry(
+            productTelemetry = productTelemetry,
+            diagnosticsTelemetry = diagnosticsTelemetry,
             analyticsEnabled = { false },
         )
+        val event = CleanerTelemetryEvent(name = "test_event", properties = emptyMap())
 
-        telemetry.track(CleanerTelemetryEvent(name = "test_event", properties = emptyMap()))
+        telemetry.track(event)
 
-        assertEquals(emptyList<CleanerTelemetryEvent>(), recordingTelemetry.events)
+        assertEquals(emptyList<CleanerTelemetryEvent>(), productTelemetry.events)
+        assertEquals(listOf(event), diagnosticsTelemetry.events)
     }
 
     @Test
-    fun consentAwareTelemetryForwardsEventsWhenAnalyticsIsEnabled() {
-        val recordingTelemetry = RecordingCleanerTelemetry()
-        val telemetry = ConsentAwareCleanerTelemetry(
-            delegate = recordingTelemetry,
+    fun productAnalyticsWithDiagnosticsForwardsProductEventsWhenAnalyticsIsEnabled() {
+        val productTelemetry = RecordingCleanerTelemetry()
+        val diagnosticsTelemetry = RecordingCleanerTelemetry()
+        val telemetry = ProductAnalyticsWithDiagnosticsTelemetry(
+            productTelemetry = productTelemetry,
+            diagnosticsTelemetry = diagnosticsTelemetry,
             analyticsEnabled = { true },
         )
         val event = CleanerTelemetryEvent(name = "test_event", properties = mapOf("count" to 1))
 
         telemetry.track(event)
 
-        assertEquals(listOf(event), recordingTelemetry.events)
+        assertEquals(listOf(event), productTelemetry.events)
+        assertEquals(listOf(event), diagnosticsTelemetry.events)
     }
 
     @Test
