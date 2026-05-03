@@ -78,6 +78,7 @@ class PhotoPostDeleteStatusTest {
 
         assertEquals("1 photo resolved", status?.title)
         assertEquals("1 selected photo still appears in duplicate review", status?.message)
+        assertEquals("Review remaining groups", status?.nextActionLabel)
         assertEquals(1, status?.remainingGroupCount)
         assertEquals(1_000L, status?.remainingRecoverableBytes)
     }
@@ -98,6 +99,7 @@ class PhotoPostDeleteStatusTest {
 
         assertEquals("All duplicate photos cleared", status?.title)
         assertEquals("2 photos no longer appear in duplicate review", status?.message)
+        assertEquals("Return to Photos", status?.nextActionLabel)
         assertEquals(0, status?.remainingGroupCount)
         assertEquals(0L, status?.remainingRecoverableBytes)
     }
@@ -149,6 +151,25 @@ class PhotoPostDeleteStatusTest {
             ),
             status?.metrics,
         )
+    }
+
+    @Test
+    fun surfacesNextActionWhenNonPriorityGroupsRemain() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 4,
+                requestedBytes = 4_000L,
+                resolvedItemCount = 4,
+                stillNeedsReviewCount = 0,
+                stillNeedsReviewUris = emptyList(),
+                remainingGroupCount = 3,
+                remainingRecoverableBytes = 3_000L,
+            ),
+        )
+
+        assertEquals("4 photos removed", status?.title)
+        assertEquals("3 duplicate groups still need review", status?.message)
+        assertEquals("Review remaining groups", status?.nextActionLabel)
     }
 
     @Test

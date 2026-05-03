@@ -33,12 +33,16 @@ data class PhotoPostDeleteStatus(
                 remainingGroupCount = reconciliation.remainingGroupCount,
                 remainingRecoverableBytes = reconciliation.remainingRecoverableBytes,
                 metrics = reconciliation.metrics(),
-                nextActionLabel = if (reconciliation.remainingPriorityGroupCount > 0) {
-                    "Review priority groups next"
-                } else {
-                    null
-                },
+                nextActionLabel = reconciliation.nextActionLabel(),
             )
+        }
+
+        private fun PhotoDeleteReconciliation.nextActionLabel(): String {
+            return when {
+                remainingPriorityGroupCount > 0 -> "Review priority groups next"
+                remainingGroupCount > 0 -> "Review remaining groups"
+                else -> "Return to Photos"
+            }
         }
 
         private fun PhotoDeleteReconciliation.metrics(): List<PhotoPostDeleteMetric> {
