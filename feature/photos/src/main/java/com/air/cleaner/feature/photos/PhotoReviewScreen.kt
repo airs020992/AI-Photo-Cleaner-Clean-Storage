@@ -107,6 +107,12 @@ fun PhotoReviewScreen(
                     onToggle = { itemId ->
                         selectionState = selectionState.toggle(itemId)
                     },
+                    onDeselectGroup = {
+                        selectionState = selectionState.deselectGroup(group.key)
+                    },
+                    onResetGroup = {
+                        selectionState = selectionState.resetGroup(group.key, keepStrategy)
+                    },
                     itemMatchLabel = itemMatchLabel,
                     matchExplanation = groupMatchExplanation?.invoke(group),
                     keepStrategy = keepStrategy,
@@ -348,6 +354,8 @@ private fun DuplicateGroupCard(
     group: DuplicateGroup,
     selectionState: PhotoReviewSelectionState,
     onToggle: (String) -> Unit,
+    onDeselectGroup: () -> Unit,
+    onResetGroup: () -> Unit,
     modifier: Modifier = Modifier,
     itemMatchLabel: String = "Duplicate",
     matchExplanation: String? = null,
@@ -363,11 +371,40 @@ private fun DuplicateGroupCard(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = "Group $groupIndex | ${group.items.size} photos",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
+            val selectedInGroup = group.items.count { selectionState.isSelectedForDeletion(it.id) }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Group $groupIndex | ${group.items.size} photos",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = "$selectedInGroup selected in this group",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(
+                            enabled = selectedInGroup > 0,
+                            onClick = onDeselectGroup,
+                        ) {
+                            Text("Clear")
+                        }
+                        TextButton(
+                            enabled = selectedInGroup < group.items.size - 1,
+                            onClick = onResetGroup,
+                        ) {
+                            Text("Suggested")
+                        }
+                    }
+                }
+            }
             matchExplanation?.let { explanation ->
                 Text(
                     text = explanation,

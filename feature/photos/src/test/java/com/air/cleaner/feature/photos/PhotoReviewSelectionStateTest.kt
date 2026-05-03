@@ -101,6 +101,52 @@ class PhotoReviewSelectionStateTest {
     }
 
     @Test
+    fun canDeselectOneGroupWithoutChangingOtherGroups() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("first-keep", 3_000L, 100L),
+                    mediaItem("first-delete", 2_000L, 200L),
+                    key = "first",
+                ),
+                duplicateGroup(
+                    mediaItem("second-keep", 4_000L, 300L),
+                    mediaItem("second-delete", 1_000L, 400L),
+                    key = "second",
+                ),
+            ),
+        )
+
+        val afterDeselect = state.deselectGroup("first")
+
+        assertFalse(afterDeselect.isSelectedForDeletion("first-keep"))
+        assertFalse(afterDeselect.isSelectedForDeletion("first-delete"))
+        assertFalse(afterDeselect.isSelectedForDeletion("second-keep"))
+        assertTrue(afterDeselect.isSelectedForDeletion("second-delete"))
+        assertEquals(1, afterDeselect.selectedCount)
+        assertEquals(1_000L, afterDeselect.selectedBytes)
+    }
+
+    @Test
+    fun canResetOneGroupToSuggestedDeletion() {
+        val group = duplicateGroup(
+            mediaItem("older", 3_000L, 100L),
+            mediaItem("newest", 2_000L, 200L),
+            key = "screenshots",
+        )
+        val state = PhotoReviewSelectionState
+            .fromGroups(listOf(group), keepStrategy = PhotoReviewKeepStrategy.Newest)
+            .deselectGroup("screenshots")
+
+        val afterReset = state.resetGroup("screenshots", keepStrategy = PhotoReviewKeepStrategy.Newest)
+
+        assertTrue(afterReset.isSelectedForDeletion("older"))
+        assertFalse(afterReset.isSelectedForDeletion("newest"))
+        assertEquals(1, afterReset.selectedCount)
+        assertEquals(3_000L, afterReset.selectedBytes)
+    }
+
+    @Test
     fun exposesSelectedItemsForDeleteConfirmation() {
         val state = PhotoReviewSelectionState.fromGroups(
             groups = listOf(
@@ -119,8 +165,11 @@ class PhotoReviewSelectionStateTest {
         )
     }
 
-    private fun duplicateGroup(vararg items: MediaItem): DuplicateGroup {
-        return DuplicateGroup(key = "group", items = items.toList())
+    private fun duplicateGroup(
+        vararg items: MediaItem,
+        key: String = "group",
+    ): DuplicateGroup {
+        return DuplicateGroup(key = key, items = items.toList())
     }
 
     private fun mediaItem(

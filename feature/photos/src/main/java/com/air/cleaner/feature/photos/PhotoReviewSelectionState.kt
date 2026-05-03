@@ -42,6 +42,23 @@ data class PhotoReviewSelectionState(
         return copy(selectedIds = nextSelectedIds)
     }
 
+    fun deselectGroup(groupKey: String): PhotoReviewSelectionState {
+        val group = groups.firstOrNull { it.key == groupKey } ?: return this
+        val groupIds = group.items.map { it.id }.toSet()
+        return copy(selectedIds = selectedIds - groupIds)
+    }
+
+    fun resetGroup(
+        groupKey: String,
+        keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
+    ): PhotoReviewSelectionState {
+        val group = groups.firstOrNull { it.key == groupKey } ?: return this
+        val keepId = group.keepItem(keepStrategy).id
+        val groupIds = group.items.map { it.id }.toSet()
+        val suggestedIds = groupIds - keepId
+        return copy(selectedIds = (selectedIds - groupIds) + suggestedIds)
+    }
+
     companion object {
         fun fromGroups(
             groups: List<DuplicateGroup>,
