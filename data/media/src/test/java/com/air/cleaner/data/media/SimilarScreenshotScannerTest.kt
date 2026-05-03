@@ -166,6 +166,35 @@ class SimilarScreenshotScannerTest {
     }
 
     @Test
+    fun skipsFingerprintingNearbyScreenshotsWithoutSimilarFileSizeNeighbors() {
+        val requestedKeys = mutableListOf<String>()
+        val scanner = SimilarScreenshotScanner(
+            perceptualFingerprint = { candidate ->
+                requestedKeys += candidate.contentKey
+                when (candidate.contentKey) {
+                    "similar-a", "similar-b" -> "0000000000000000"
+                    else -> "ffffffffffffffff"
+                }
+            },
+            maxNearbyCaptureGapMillis = 10 * 60 * 1_000L,
+            maxNearbySizeDeltaRatio = 0.25,
+        )
+        val candidates = listOf(
+            candidate("1", "Screenshot_1.png", "similar-a", sizeBytes = 1_000_000L),
+            candidate("2", "Screenshot_2.png", "similar-b", sizeBytes = 1_100_000L),
+            candidate("3", "Screenshot_3.png", "far-a", sizeBytes = 2_500_000L),
+            candidate("4", "Screenshot_4.png", "far-b", sizeBytes = 4_000_000L),
+        )
+
+        val result = scanner.findSimilarGroupResult(candidates)
+
+        assertEquals(listOf("similar-a", "similar-b"), requestedKeys)
+        assertEquals(2, result.fingerprintCandidateCount)
+        assertEquals(2, result.fingerprintSkippedCount)
+        assertEquals(listOf(listOf("1", "2")), result.groups.map { group -> group.items.map { it.id }.sorted() })
+    }
+
+    @Test
     fun sortsGroupsByRecoverableSpaceThenRecentCaptureTime() {
         val scanner = SimilarScreenshotScanner(
             perceptualFingerprint = { candidate ->

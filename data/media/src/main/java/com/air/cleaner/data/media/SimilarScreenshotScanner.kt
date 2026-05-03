@@ -32,6 +32,7 @@ class SimilarScreenshotScanner(
     private val perceptualFingerprint: (SimilarScreenshotCandidate) -> String?,
     private val maxHashDistance: Int = DEFAULT_MAX_HASH_DISTANCE,
     private val maxNearbyCaptureGapMillis: Long = DEFAULT_MAX_NEARBY_CAPTURE_GAP_MILLIS,
+    private val maxNearbySizeDeltaRatio: Double = DEFAULT_MAX_NEARBY_SIZE_DELTA_RATIO,
 ) {
     fun findSimilarGroups(candidates: List<SimilarScreenshotCandidate>): List<DuplicateGroup> {
         return findSimilarGroupResult(candidates).groups
@@ -50,8 +51,9 @@ class SimilarScreenshotScanner(
             .values
             .map { bucket ->
                 val nearbyBucket = bucket.withNearbyCaptureNeighbors()
-                fingerprintSkippedCount += bucket.size - nearbyBucket.size
-                nearbyBucket
+                val sizeNearbyBucket = nearbyBucket.withNearbySizeNeighbors()
+                fingerprintSkippedCount += bucket.size - sizeNearbyBucket.size
+                sizeNearbyBucket
             }
             .filter { it.size > 1 }
             .flatMap { bucket ->
@@ -112,6 +114,21 @@ class SimilarScreenshotScanner(
         }
     }
 
+    private fun List<SimilarScreenshotCandidate>.withNearbySizeNeighbors(): List<SimilarScreenshotCandidate> {
+        return filter { candidate ->
+            any { other ->
+                other.item.id != candidate.item.id &&
+                    candidate.hasNearbySize(other)
+            }
+        }
+    }
+
+    private fun SimilarScreenshotCandidate.hasNearbySize(other: SimilarScreenshotCandidate): Boolean {
+        val largerSize = maxOf(item.sizeBytes, other.item.sizeBytes)
+        val allowedDelta = maxOf(MIN_NEARBY_SIZE_DELTA_BYTES, (largerSize * maxNearbySizeDeltaRatio).toLong())
+        return abs(item.sizeBytes - other.item.sizeBytes) <= allowedDelta
+    }
+
     private fun SimilarScreenshotCandidate.isScreenshot(): Boolean {
         return item.displayName.contains("screenshot", ignoreCase = true) ||
             relativePath.orEmpty().contains("screenshot", ignoreCase = true)
@@ -125,5 +142,7 @@ class SimilarScreenshotScanner(
     companion object {
         private const val DEFAULT_MAX_HASH_DISTANCE = 18
         private const val DEFAULT_MAX_NEARBY_CAPTURE_GAP_MILLIS = 10 * 60 * 1_000L
+        private const val DEFAULT_MAX_NEARBY_SIZE_DELTA_RATIO = 0.25
+        private const val MIN_NEARBY_SIZE_DELTA_BYTES = 256 * 1_024L
     }
 }
