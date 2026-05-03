@@ -31,4 +31,23 @@ class AppNavigationStateTest {
         assertEquals(AppScreen.DuplicatePhotoReview, next.currentScreen)
         assertTrue(next.shouldShowBottomTabs)
     }
+
+    @Test
+    fun similarScreenshotActionDoesNotOpenReviewBeforeScanCompletes() {
+        val state = AppNavigationState(selectedTab = AppTab.Photos, currentScreen = AppScreen.Tab(AppTab.Photos))
+
+        val next = state.openSimilarScreenshots(scanComplete = false)
+
+        assertEquals(state, next)
+    }
+
+    @Test
+    fun similarScreenshotActionOpensReviewAfterScanCompletes() {
+        val state = AppNavigationState()
+
+        val next = state.openSimilarScreenshots(scanComplete = true)
+
+        assertEquals(AppTab.Photos, next.selectedTab)
+        assertEquals(AppScreen.SimilarScreenshotReview, next.currentScreen)
+    }
 }

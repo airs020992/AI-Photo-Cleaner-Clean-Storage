@@ -27,14 +27,16 @@ data class AppNavigationState(
         return copy(selectedTab = tab, currentScreen = AppScreen.Tab(tab))
     }
 
-    fun openDuplicatePhotos(): AppNavigationState {
+    fun openDuplicatePhotos(scanComplete: Boolean = true): AppNavigationState {
+        if (!scanComplete) return this
         return copy(
             selectedTab = AppTab.Photos,
             currentScreen = AppScreen.DuplicatePhotoReview,
         )
     }
 
-    fun openSimilarScreenshots(): AppNavigationState {
+    fun openSimilarScreenshots(scanComplete: Boolean = true): AppNavigationState {
+        if (!scanComplete) return this
         return copy(
             selectedTab = AppTab.Photos,
             currentScreen = AppScreen.SimilarScreenshotReview,
