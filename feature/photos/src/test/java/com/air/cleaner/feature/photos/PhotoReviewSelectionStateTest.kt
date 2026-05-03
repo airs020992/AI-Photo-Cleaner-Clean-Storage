@@ -208,6 +208,32 @@ class PhotoReviewSelectionStateTest {
         )
     }
 
+    @Test
+    fun canProtectReviewGroupsFromInitialDeletionSelection() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("priority-keep", 3_000L, 100L),
+                    mediaItem("priority-delete", 2_000L, 200L),
+                    key = "priority",
+                ),
+                duplicateGroup(
+                    mediaItem("normal-keep", 4_000L, 300L),
+                    mediaItem("normal-delete", 1_000L, 400L),
+                    key = "normal",
+                ),
+            ),
+            protectedGroupKeys = setOf("priority"),
+        )
+
+        assertFalse(state.isSelectedForDeletion("priority-keep"))
+        assertFalse(state.isSelectedForDeletion("priority-delete"))
+        assertFalse(state.isSelectedForDeletion("normal-keep"))
+        assertTrue(state.isSelectedForDeletion("normal-delete"))
+        assertEquals(1, state.selectedCount)
+        assertEquals(1_000L, state.selectedBytes)
+    }
+
     private fun duplicateGroup(
         vararg items: MediaItem,
         key: String = "group",

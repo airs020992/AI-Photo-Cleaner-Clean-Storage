@@ -79,8 +79,10 @@ data class PhotoReviewSelectionState(
         fun fromGroups(
             groups: List<DuplicateGroup>,
             keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
+            protectedGroupKeys: Set<String> = emptySet(),
         ): PhotoReviewSelectionState {
             val selectedIds = groups
+                .filterNot { group -> group.key in protectedGroupKeys }
                 .flatMap { group ->
                     group.items.filterNot { item -> item.id == group.keepItem(keepStrategy).id }
                 }

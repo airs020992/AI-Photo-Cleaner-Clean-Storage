@@ -21,8 +21,11 @@ class SimilarScreenshotReviewWorkflowTest {
         )
 
         assertEquals(listOf("sensitive", "mixed", "normal"), workflow.groups.map { it.key })
+        assertEquals(setOf("sensitive", "mixed"), workflow.needsReviewGroupKeys)
+        assertEquals(setOf("normal"), workflow.normalGroupKeys)
         assertEquals("3 groups", workflow.totalGroupsLabel)
         assertEquals("2 need review", workflow.needsReviewGroupsLabel)
+        assertEquals("1 quick-clean group", workflow.normalGroupsLabel)
         assertEquals("All", workflow.activeFilterLabel)
     }
 

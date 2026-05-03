@@ -62,13 +62,27 @@ fun PhotoReviewScreen(
     groupTrustSummary: ((DuplicateGroup) -> SimilarScreenshotTrustSummary?)? = null,
     keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
+    val usesSimilarScreenshotWorkflow = groupTrustSummary != null
+    val initialReviewWorkflow = if (usesSimilarScreenshotWorkflow) {
+        groups.toSimilarScreenshotReviewWorkflow(
+            keepStrategy = keepStrategy,
+            filter = SimilarScreenshotReviewFilter.All,
+        )
+    } else {
+        null
+    }
     var selectionState by remember(groups, keepStrategy) {
-        mutableStateOf(PhotoReviewSelectionState.fromGroups(groups, keepStrategy))
+        mutableStateOf(
+            PhotoReviewSelectionState.fromGroups(
+                groups = groups,
+                keepStrategy = keepStrategy,
+                protectedGroupKeys = initialReviewWorkflow?.needsReviewGroupKeys.orEmpty(),
+            ),
+        )
     }
     var previewRequest by remember(groups) {
         mutableStateOf<PhotoPreviewRequest?>(null)
     }
-    val usesSimilarScreenshotWorkflow = groupTrustSummary != null
     var reviewFilter by remember(groups, usesSimilarScreenshotWorkflow) {
         mutableStateOf(SimilarScreenshotReviewFilter.All)
     }
@@ -231,7 +245,12 @@ private fun SimilarScreenshotReviewFilterBar(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "${workflow.totalGroupsLabel} scanned | Showing ${workflow.activeFilterLabel}",
+                    text = "${workflow.totalGroupsLabel} scanned | ${workflow.normalGroupsLabel} preselected",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = "Showing ${workflow.activeFilterLabel} | priority groups require manual Suggested",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )

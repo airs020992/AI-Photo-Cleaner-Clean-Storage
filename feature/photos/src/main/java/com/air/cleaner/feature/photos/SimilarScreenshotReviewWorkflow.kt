@@ -14,10 +14,14 @@ data class SimilarScreenshotReviewWorkflow(
     val totalGroups: Int,
     val needsReviewGroups: Int,
     val activeFilterLabel: String,
+    val needsReviewGroupKeys: Set<String>,
+    val normalGroupKeys: Set<String>,
 ) {
     val totalGroupsLabel: String = "$totalGroups ${if (totalGroups == 1) "group" else "groups"}"
     val needsReviewGroupsLabel: String =
         "$needsReviewGroups ${if (needsReviewGroups == 1) "needs" else "need"} review"
+    val normalGroupsLabel: String =
+        "${normalGroupKeys.size} quick-clean ${if (normalGroupKeys.size == 1) "group" else "groups"}"
 }
 
 fun List<DuplicateGroup>.toSimilarScreenshotReviewWorkflow(
@@ -36,6 +40,14 @@ fun List<DuplicateGroup>.toSimilarScreenshotReviewWorkflow(
             },
     )
     val needsReviewGroups = rankedGroups.count { it.priority != SimilarScreenshotReviewPriority.Normal }
+    val needsReviewGroupKeys = rankedGroups
+        .filter { it.priority != SimilarScreenshotReviewPriority.Normal }
+        .map { it.group.key }
+        .toSet()
+    val normalGroupKeys = rankedGroups
+        .filter { it.priority == SimilarScreenshotReviewPriority.Normal }
+        .map { it.group.key }
+        .toSet()
     val visibleGroups = rankedGroups
         .filter { rankedGroup ->
             filter == SimilarScreenshotReviewFilter.All ||
@@ -48,6 +60,8 @@ fun List<DuplicateGroup>.toSimilarScreenshotReviewWorkflow(
         totalGroups = size,
         needsReviewGroups = needsReviewGroups,
         activeFilterLabel = filter.label,
+        needsReviewGroupKeys = needsReviewGroupKeys,
+        normalGroupKeys = normalGroupKeys,
     )
 }
 
