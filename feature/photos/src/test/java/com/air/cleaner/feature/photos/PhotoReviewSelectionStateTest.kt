@@ -119,6 +119,10 @@ class PhotoReviewSelectionStateTest {
 
         val afterDeselect = state.deselectGroup("first")
 
+        assertEquals(0, afterDeselect.selectedCountInGroup("first"))
+        assertEquals(0L, afterDeselect.selectedBytesInGroup("first"))
+        assertEquals(1, afterDeselect.selectedCountInGroup("second"))
+        assertEquals(1_000L, afterDeselect.selectedBytesInGroup("second"))
         assertFalse(afterDeselect.isSelectedForDeletion("first-keep"))
         assertFalse(afterDeselect.isSelectedForDeletion("first-delete"))
         assertFalse(afterDeselect.isSelectedForDeletion("second-keep"))
@@ -142,6 +146,8 @@ class PhotoReviewSelectionStateTest {
 
         assertTrue(afterReset.isSelectedForDeletion("older"))
         assertFalse(afterReset.isSelectedForDeletion("newest"))
+        assertEquals(1, afterReset.selectedCountInGroup("screenshots"))
+        assertEquals(3_000L, afterReset.selectedBytesInGroup("screenshots"))
         assertEquals(1, afterReset.selectedCount)
         assertEquals(3_000L, afterReset.selectedBytes)
     }

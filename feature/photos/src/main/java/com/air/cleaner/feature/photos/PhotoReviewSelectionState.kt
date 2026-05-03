@@ -25,6 +25,14 @@ data class PhotoReviewSelectionState(
         return itemId in selectedIds
     }
 
+    fun selectedCountInGroup(groupKey: String): Int {
+        return selectedItemsInGroup(groupKey).size
+    }
+
+    fun selectedBytesInGroup(groupKey: String): Long {
+        return selectedItemsInGroup(groupKey).sumOf { it.sizeBytes }
+    }
+
     fun toggle(itemId: String): PhotoReviewSelectionState {
         val nextSelectedIds = if (itemId in selectedIds) {
             selectedIds - itemId
@@ -72,6 +80,11 @@ data class PhotoReviewSelectionState(
                 .toSet()
             return PhotoReviewSelectionState(groups = groups, selectedIds = selectedIds)
         }
+    }
+
+    private fun selectedItemsInGroup(groupKey: String): List<MediaItem> {
+        val group = groups.firstOrNull { it.key == groupKey } ?: return emptyList()
+        return group.items.filter { it.id in selectedIds }
     }
 }
 

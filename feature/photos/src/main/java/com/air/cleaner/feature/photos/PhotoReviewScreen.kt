@@ -371,7 +371,8 @@ private fun DuplicateGroupCard(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val selectedInGroup = group.items.count { selectionState.isSelectedForDeletion(it.id) }
+            val selectedInGroup = selectionState.selectedCountInGroup(group.key)
+            val selectedBytesInGroup = selectionState.selectedBytesInGroup(group.key)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = "Group $groupIndex | ${group.items.size} photos",
@@ -385,7 +386,7 @@ private fun DuplicateGroupCard(
                 ) {
                     Text(
                         modifier = Modifier.weight(1f),
-                        text = "$selectedInGroup selected in this group",
+                        text = "$selectedInGroup selected | ${formatBytes(selectedBytesInGroup)} in this group",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -407,7 +408,7 @@ private fun DuplicateGroupCard(
             }
             matchExplanation?.let { explanation ->
                 Text(
-                    text = explanation,
+                    text = "Why matched: $explanation",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
