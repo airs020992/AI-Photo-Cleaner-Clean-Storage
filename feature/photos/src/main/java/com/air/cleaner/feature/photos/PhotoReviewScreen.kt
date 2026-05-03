@@ -155,8 +155,7 @@ fun PhotoDeleteConfirmationDialog(
 
 @Composable
 fun PhotoDeleteResultDialog(
-    deletedCount: Int,
-    freedBytes: Long,
+    result: PhotoDeletionResult,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -164,10 +163,22 @@ fun PhotoDeleteResultDialog(
         modifier = modifier,
         onDismissRequest = onDone,
         title = {
-            Text("Cleanup complete")
+            Text(
+                text = when (result.status) {
+                    PhotoDeletionStatus.Deleted -> "Cleanup complete"
+                    PhotoDeletionStatus.Canceled -> "Deletion canceled"
+                    PhotoDeletionStatus.Blocked -> "Deletion needs attention"
+                },
+            )
         },
         text = {
-            Text("$deletedCount photos removed | ${formatBytes(freedBytes)} freed")
+            Text(
+                text = when (result.status) {
+                    PhotoDeletionStatus.Deleted -> "${result.itemCount} photos removed | ${formatBytes(result.bytes)} freed"
+                    PhotoDeletionStatus.Canceled -> "No photos were removed. Your previous selection is still available for review."
+                    PhotoDeletionStatus.Blocked -> "No photos were removed because Android could not open a system delete request for this selection."
+                },
+            )
         },
         confirmButton = {
             Button(onClick = onDone) {

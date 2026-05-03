@@ -80,6 +80,7 @@ import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
 import com.air.cleaner.feature.photos.PhotoDeleteConfirmationDialog
 import com.air.cleaner.feature.photos.PhotoDeleteResultDialog
+import com.air.cleaner.feature.photos.PhotoDeletionResult
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import kotlinx.coroutines.Dispatchers
@@ -105,14 +106,20 @@ fun AIPhotoCleanerApp() {
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
-            var deleteResultSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var scanRefreshKey by remember { mutableStateOf(0) }
             val deleteLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartIntentSenderForResult(),
             ) { result ->
-                if (result.resultCode == Activity.RESULT_OK) {
-                    deleteResultSummary = pendingDeleteSummary
-                    scanRefreshKey += 1
+                pendingDeleteSummary?.let { summary ->
+                    val deletionResult = PhotoDeletionResult.fromSystemResult(
+                        summary = summary,
+                        systemConfirmed = result.resultCode == Activity.RESULT_OK,
+                    )
+                    deleteResult = deletionResult
+                    if (deletionResult.shouldRefreshScan) {
+                        scanRefreshKey += 1
+                    }
                 }
                 pendingDeleteSummary = null
             }
@@ -134,15 +141,19 @@ fun AIPhotoCleanerApp() {
                 onOpenDuplicatePhotos = { navigationState = navigationState.openDuplicatePhotos() },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 pendingDeleteSummary = pendingDeleteSummary,
-                deleteResultSummary = deleteResultSummary,
+                deleteResult = deleteResult,
                 onRequestDeleteConfirmation = { pendingDeleteSummary = it },
                 onDismissDeleteConfirmation = { pendingDeleteSummary = null },
                 onConfirmDelete = { summary ->
-                    context.createSystemDeleteRequest(summary.contentUris)?.let { sender ->
+                    val sender = context.createSystemDeleteRequest(summary.contentUris)
+                    if (sender == null) {
+                        deleteResult = PhotoDeletionResult.blocked(summary)
+                        pendingDeleteSummary = null
+                    } else {
                         deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
                     }
                 },
-                onDismissDeleteResult = { deleteResultSummary = null },
+                onDismissDeleteResult = { deleteResult = null },
             )
         } else {
             OnboardingScreen(
@@ -164,7 +175,7 @@ private fun MainAppShell(
     onOpenDuplicatePhotos: () -> Unit,
     onBackToPhotos: () -> Unit,
     pendingDeleteSummary: PhotoDeletionSummary?,
-    deleteResultSummary: PhotoDeletionSummary?,
+    deleteResult: PhotoDeletionResult?,
     onRequestDeleteConfirmation: (PhotoDeletionSummary) -> Unit,
     onDismissDeleteConfirmation: () -> Unit,
     onConfirmDelete: (PhotoDeletionSummary) -> Unit,
@@ -209,10 +220,9 @@ private fun MainAppShell(
                 onConfirmDelete = { onConfirmDelete(summary) },
             )
         }
-        deleteResultSummary?.let { summary ->
+        deleteResult?.let { result ->
             PhotoDeleteResultDialog(
-                deletedCount = summary.itemCount,
-                freedBytes = summary.bytesToDelete,
+                result = result,
                 onDone = onDismissDeleteResult,
             )
         }
@@ -714,7 +724,7 @@ private fun MainAppShellPreview() {
             onOpenDuplicatePhotos = {},
             onBackToPhotos = {},
             pendingDeleteSummary = null,
-            deleteResultSummary = null,
+            deleteResult = null,
             onRequestDeleteConfirmation = {},
             onDismissDeleteConfirmation = {},
             onConfirmDelete = {},
