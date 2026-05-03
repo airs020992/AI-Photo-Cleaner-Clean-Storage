@@ -108,6 +108,7 @@ fun AIPhotoCleanerApp() {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
+            var scanStatus by remember { mutableStateOf(MediaScanStatus()) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
@@ -136,15 +137,28 @@ fun AIPhotoCleanerApp() {
 
             LaunchedEffect(context, permissionState.access, scanRefreshKey) {
                 val repository = AndroidMediaStoreRepository(context.contentResolver)
+                scanStatus = MediaScanStatus(MediaScanPhase.CountingLibrary)
                 scanSummary = withContext(Dispatchers.IO) {
                     repository.scanSummary()
                 }
+                scanStatus = MediaScanStatus(
+                    phase = MediaScanPhase.FindingSimilarScreenshots,
+                    summary = scanSummary,
+                )
                 similarScreenshotGroups = withContext(Dispatchers.IO) {
                     repository.scanSimilarScreenshotGroups()
                 }
+                scanStatus = MediaScanStatus(
+                    phase = MediaScanPhase.FindingDuplicatePhotos,
+                    summary = scanSummary,
+                )
                 duplicatePhotoGroups = withContext(Dispatchers.IO) {
                     repository.scanDuplicatePhotoGroups()
                 }
+                scanStatus = MediaScanStatus(
+                    phase = MediaScanPhase.ReconcilingDeletes,
+                    summary = scanSummary,
+                )
                 lastStillExistingDeletedUris = withContext(Dispatchers.IO) {
                     lastDeletedSummary
                         ?.takeIf { lastDeletedResult?.shouldRefreshScan == true }
@@ -152,11 +166,16 @@ fun AIPhotoCleanerApp() {
                             repository.contentUrisStillPresent(deleteSummary.contentUris)
                         }
                 }
+                scanStatus = MediaScanStatus(
+                    phase = MediaScanPhase.Complete,
+                    summary = scanSummary,
+                )
             }
 
             MainAppShell(
                 navigationState = navigationState,
                 scanSummary = scanSummary,
+                scanStatus = scanStatus,
                 duplicatePhotoGroups = duplicatePhotoGroups,
                 similarScreenshotGroups = similarScreenshotGroups,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
@@ -209,6 +228,7 @@ fun AIPhotoCleanerApp() {
 private fun MainAppShell(
     navigationState: AppNavigationState,
     scanSummary: MediaScanSummary?,
+    scanStatus: MediaScanStatus,
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
     onTabSelected: (AppTab) -> Unit,
@@ -259,7 +279,10 @@ private fun MainAppShell(
             }
             AppScreen.SimilarScreenshotReview -> Box(modifier = Modifier.padding(padding)) {
                 if (similarScreenshotGroups == null) {
-                    SimilarScreenshotsLoadingScreen(onBack = onBackToPhotos)
+                    SimilarScreenshotsLoadingScreen(
+                        scanStatus = scanStatus,
+                        onBack = onBackToPhotos,
+                    )
                 } else {
                     PhotoReviewScreen(
                         title = "Similar screenshots",
@@ -295,6 +318,7 @@ private fun MainAppShell(
 
 @Composable
 private fun SimilarScreenshotsLoadingScreen(
+    scanStatus: MediaScanStatus,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -310,7 +334,7 @@ private fun SimilarScreenshotsLoadingScreen(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Scanning media library",
+            text = scanStatus.similarLoadingStepLabel(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -331,8 +355,13 @@ private fun SimilarScreenshotsLoadingScreen(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "First scan can take up to a minute on large libraries. Results will appear here automatically.",
+                    text = scanStatus.similarLoadingMessage(),
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "First scan can take up to a minute on large libraries.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -861,6 +890,17 @@ private fun MainAppShellPreview() {
                 videoBytes = 5_200_000_000L,
                 screenshotCount = 820,
                 screenshotBytes = 820_000_000L,
+            ),
+            scanStatus = MediaScanStatus(
+                phase = MediaScanPhase.Complete,
+                summary = MediaScanSummary(
+                    imageCount = 8_240,
+                    videoCount = 420,
+                    imageBytes = 3_400_000_000L,
+                    videoBytes = 5_200_000_000L,
+                    screenshotCount = 820,
+                    screenshotBytes = 820_000_000L,
+                ),
             ),
             duplicatePhotoGroups = emptyList(),
             similarScreenshotGroups = emptyList(),
