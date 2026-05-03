@@ -65,8 +65,8 @@ fun PhotoReviewScreen(
     var selectionState by remember(groups, keepStrategy) {
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups, keepStrategy))
     }
-    var previewItem by remember(groups) {
-        mutableStateOf<MediaItem?>(null)
+    var previewRequest by remember(groups) {
+        mutableStateOf<PhotoPreviewRequest?>(null)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -125,7 +125,10 @@ fun PhotoReviewScreen(
                         trustSummary = groupTrustSummary?.invoke(group),
                         keepStrategy = keepStrategy,
                         onPreviewItem = { item ->
-                            previewItem = item
+                            previewRequest = PhotoPreviewRequest(
+                                groupKey = group.key,
+                                itemId = item.id,
+                            )
                         },
                     )
                 }
@@ -142,19 +145,38 @@ fun PhotoReviewScreen(
         )
     }
 
-    previewItem?.let { item ->
-        val previewGroup = groups.firstOrNull { group -> group.items.any { groupItem -> groupItem.id == item.id } }
+    previewRequest?.let { request ->
+        val previewGroup = groups.firstOrNull { group -> group.key == request.groupKey }
+        val session = previewGroup?.items?.toPhotoPreviewSession(request.itemId)
+        val item = session?.currentItem
+        if (previewGroup != null && session != null && item != null) {
         PhotoPreviewDialog(
-            item = item,
-            detail = item.toPhotoPreviewDetail(
-                isRecommendedKeep = item.id == previewGroup?.keepItem(keepStrategy)?.id,
-                selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
-                itemMatchLabel = itemMatchLabel,
-            ),
-            onDismiss = { previewItem = null },
+                item = item,
+                detail = item.toPhotoPreviewDetail(
+                    isRecommendedKeep = item.id == previewGroup.keepItem(keepStrategy).id,
+                    selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
+                    itemMatchLabel = itemMatchLabel,
+                ),
+                session = session,
+                onPrevious = {
+                    previewRequest = request.copy(itemId = session.previousItem.id)
+                },
+                onNext = {
+                    previewRequest = request.copy(itemId = session.nextItem.id)
+                },
+                onToggleSelection = {
+                    selectionState = selectionState.toggle(item.id)
+                },
+                onDismiss = { previewRequest = null },
         )
+        }
     }
 }
+
+private data class PhotoPreviewRequest(
+    val groupKey: String,
+    val itemId: String,
+)
 
 @Composable
 private fun PhotoReviewBottomActionBar(
@@ -662,6 +684,10 @@ private fun PhotoReviewPreviewStrip(
 private fun PhotoPreviewDialog(
     item: MediaItem,
     detail: PhotoPreviewDetail,
+    session: PhotoPreviewSession,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToggleSelection: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -673,6 +699,29 @@ private fun PhotoPreviewDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        enabled = session.hasPrevious,
+                        onClick = onPrevious,
+                    ) {
+                        Text("Previous")
+                    }
+                    Text(
+                        text = session.positionLine,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(
+                        enabled = session.hasNext,
+                        onClick = onNext,
+                    ) {
+                        Text("Next")
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -719,6 +768,9 @@ private fun PhotoPreviewDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Button(onClick = onToggleSelection) {
+                        Text(if (detail.selectedForDeletion) "Keep this" else "Select for deletion")
+                    }
                 }
             }
         },

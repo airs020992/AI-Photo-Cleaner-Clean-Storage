@@ -9,6 +9,7 @@ data class PhotoPreviewDetail(
     val roleLine: String,
     val statusLine: String,
     val metadataLine: String,
+    val selectedForDeletion: Boolean,
 )
 
 fun MediaItem.toPhotoPreviewDetail(
@@ -31,6 +32,7 @@ fun MediaItem.toPhotoPreviewDetail(
         roleLine = "$roleLabel | $sizeLabel",
         statusLine = "Status: $statusLabel",
         metadataLine = "Size: $sizeLabel | $dimensionsLabel",
+        selectedForDeletion = selectedForDeletion,
     )
 }
 
