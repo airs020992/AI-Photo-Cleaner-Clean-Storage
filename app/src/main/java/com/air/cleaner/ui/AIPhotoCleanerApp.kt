@@ -116,9 +116,11 @@ fun AIPhotoCleanerApp() {
             var scanStatus by remember { mutableStateOf(MediaScanStatus()) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var pendingDeleteReviewContext by remember { mutableStateOf<PhotoDeleteReviewContext?>(null) }
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var lastDeletedResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var lastDeletedSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var lastDeletedReviewContext by remember { mutableStateOf<PhotoDeleteReviewContext?>(null) }
             var lastStillExistingDeletedUris by remember { mutableStateOf<List<String>?>(null) }
             var scanRefreshKey by remember { mutableStateOf(0) }
             val deleteLauncher = rememberLauncherForActivityResult(
@@ -133,11 +135,13 @@ fun AIPhotoCleanerApp() {
                     if (deletionResult.shouldRefreshScan) {
                         lastDeletedResult = deletionResult
                         lastDeletedSummary = summary
+                        lastDeletedReviewContext = pendingDeleteReviewContext
                         lastStillExistingDeletedUris = null
                         scanRefreshKey += 1
                     }
                 }
                 pendingDeleteSummary = null
+                pendingDeleteReviewContext = null
             }
 
             LaunchedEffect(context, permissionState.access, scanRefreshKey) {
@@ -204,6 +208,20 @@ fun AIPhotoCleanerApp() {
                 )
             }
 
+            val postDeleteStatus = lastDeletedReviewContext?.let { reviewContext ->
+                PhotoPostDeleteStatus.from(
+                    reconciliation = PhotoDeleteReconciliation.from(
+                        summary = lastDeletedSummary,
+                        result = lastDeletedResult,
+                        currentGroups = reviewContext.groupsForReconciliation(
+                            duplicatePhotoGroups = duplicatePhotoGroups.orEmpty(),
+                            similarScreenshotGroups = similarScreenshotGroups.orEmpty(),
+                        ),
+                        stillExistingContentUris = lastStillExistingDeletedUris,
+                    ),
+                )
+            }
+
             MainAppShell(
                 navigationState = navigationState,
                 scanSummary = scanSummary,
@@ -230,21 +248,22 @@ fun AIPhotoCleanerApp() {
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
-                postDeleteStatus = PhotoPostDeleteStatus.from(
-                    reconciliation = PhotoDeleteReconciliation.from(
-                        summary = lastDeletedSummary,
-                        result = lastDeletedResult,
-                        currentGroups = duplicatePhotoGroups.orEmpty(),
-                        stillExistingContentUris = lastStillExistingDeletedUris,
-                    ),
-                ),
-                onRequestDeleteConfirmation = { pendingDeleteSummary = it },
-                onDismissDeleteConfirmation = { pendingDeleteSummary = null },
+                postDeleteStatus = postDeleteStatus,
+                postDeleteReviewContext = lastDeletedReviewContext,
+                onRequestDeleteConfirmation = { summary, reviewContext ->
+                    pendingDeleteSummary = summary
+                    pendingDeleteReviewContext = reviewContext
+                },
+                onDismissDeleteConfirmation = {
+                    pendingDeleteSummary = null
+                    pendingDeleteReviewContext = null
+                },
                 onConfirmDelete = { summary ->
                     val sender = context.createSystemDeleteRequest(summary.contentUris)
                     if (sender == null) {
                         deleteResult = PhotoDeletionResult.blocked(summary)
                         pendingDeleteSummary = null
+                        pendingDeleteReviewContext = null
                     } else {
                         deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
                     }
@@ -278,7 +297,8 @@ private fun MainAppShell(
     pendingDeleteSummary: PhotoDeletionSummary?,
     deleteResult: PhotoDeletionResult?,
     postDeleteStatus: PhotoPostDeleteStatus?,
-    onRequestDeleteConfirmation: (PhotoDeletionSummary) -> Unit,
+    postDeleteReviewContext: PhotoDeleteReviewContext?,
+    onRequestDeleteConfirmation: (PhotoDeletionSummary, PhotoDeleteReviewContext) -> Unit,
     onDismissDeleteConfirmation: () -> Unit,
     onConfirmDelete: (PhotoDeletionSummary) -> Unit,
     onDismissDeleteResult: () -> Unit,
@@ -312,9 +332,12 @@ private fun MainAppShell(
                     onContinue = { selectionState ->
                         onRequestDeleteConfirmation(
                             PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                            PhotoDeleteReviewContext.DuplicatePhotos,
                         )
                     },
-                    postDeleteStatus = postDeleteStatus,
+                    postDeleteStatus = postDeleteStatus.takeIf {
+                        postDeleteReviewContext == PhotoDeleteReviewContext.DuplicatePhotos
+                    },
                 )
             }
             AppScreen.SimilarScreenshotReview -> Box(modifier = Modifier.padding(padding)) {
@@ -331,7 +354,11 @@ private fun MainAppShell(
                         onContinue = { selectionState ->
                             onRequestDeleteConfirmation(
                                 PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                                PhotoDeleteReviewContext.SimilarScreenshots,
                             )
+                        },
+                        postDeleteStatus = postDeleteStatus.takeIf {
+                            postDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots
                         },
                         emptyTitle = similarScreenshotReviewStatus.emptyTitle(),
                         emptyMessage = similarScreenshotReviewStatus.emptyMessage(),
@@ -959,7 +986,8 @@ private fun MainAppShellPreview() {
             pendingDeleteSummary = null,
             deleteResult = null,
             postDeleteStatus = null,
-            onRequestDeleteConfirmation = {},
+            postDeleteReviewContext = null,
+            onRequestDeleteConfirmation = { _, _ -> },
             onDismissDeleteConfirmation = {},
             onConfirmDelete = {},
             onDismissDeleteResult = {},
