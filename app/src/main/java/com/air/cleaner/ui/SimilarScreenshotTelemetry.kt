@@ -3,6 +3,7 @@ package com.air.cleaner.ui
 import android.util.Log
 import android.os.Bundle
 import com.air.cleaner.data.media.MediaScanSummary
+import com.air.cleaner.data.media.SimilarScreenshotScanResult
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoPostDeleteAction
@@ -110,6 +111,8 @@ internal object SimilarScreenshotAnalyticsContract {
             parameters = listOf(
                 AnalyticsParameterContract("elapsed_ms", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("empty_result", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("fingerprint_candidate_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("fingerprint_skipped_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("scan_source", AnalyticsParameterType.String),
@@ -319,6 +322,8 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
     val source = scanCompleted.properties["scan_source"] as? String
     val screenshotCount = scanCompleted.properties["screenshot_count"].asLongOrZero()
     val groupCount = scanCompleted.properties["group_count"].asLongOrZero()
+    val fingerprintCandidateCount = scanCompleted.properties["fingerprint_candidate_count"].asLongOrZero()
+    val fingerprintSkippedCount = scanCompleted.properties["fingerprint_skipped_count"].asLongOrZero()
     val emptyResult = scanCompleted.properties["empty_result"] as? Boolean ?: false
     val elapsedMillis = scanCompleted.properties["elapsed_ms"].asLongOrZero()
     val diagnosis = when {
@@ -326,6 +331,8 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
             "Diagnosis: no screenshots were visible to the scan. Next: verify Photos permission and that screenshots are present in the media library."
         emptyResult ->
             "Diagnosis: screenshots were scanned, but no similar groups matched. Next: test with 2-3 near-duplicate screenshots of the same screen or tune the matching threshold."
+        source == SimilarScreenshotScanSource.ColdScan.analyticsValue && fingerprintSkippedCount > 0L ->
+            "Diagnosis: cold scan found similar groups after skipping $fingerprintSkippedCount isolated screenshots before fingerprinting. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target."
         source == SimilarScreenshotScanSource.ColdScan.analyticsValue ->
             "Diagnosis: cold scan found similar groups. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target."
         else ->
@@ -336,8 +343,18 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
     } else {
         "Similar photos scan: source=$source,"
     }
+    val scanMetrics = buildList {
+        add("screenshots=$screenshotCount")
+        if (fingerprintCandidateCount > 0L || fingerprintSkippedCount > 0L) {
+            add("fingerprint_candidates=$fingerprintCandidateCount")
+            add("fingerprint_skipped=$fingerprintSkippedCount")
+        }
+        add("groups=$groupCount")
+        add("empty=$emptyResult")
+        add("elapsed_ms=$elapsedMillis")
+    }.joinToString(separator = ", ")
     return listOf(
-        "$scanLabelPrefix screenshots=$screenshotCount, groups=$groupCount, empty=$emptyResult, elapsed_ms=$elapsedMillis.",
+        "$scanLabelPrefix $scanMetrics.",
         diagnosis,
     )
 }
@@ -454,15 +471,18 @@ internal object SimilarScreenshotTelemetry {
     fun scanCompleted(
         elapsedMillis: Long,
         scanSummary: MediaScanSummary?,
-        groups: List<DuplicateGroup>,
+        result: SimilarScreenshotScanResult,
         status: SimilarScreenshotReviewStatus,
         source: SimilarScreenshotScanSource = SimilarScreenshotScanSource.ColdScan,
     ): CleanerTelemetryEvent {
+        val groups = result.groups
         return CleanerTelemetryEvent(
             name = "similar_screenshots_scan_completed",
             properties = mapOf(
                 "elapsed_ms" to elapsedMillis.coerceAtLeast(0L),
                 "screenshot_count" to (scanSummary?.screenshotCount ?: 0),
+                "fingerprint_candidate_count" to result.fingerprintCandidateCount,
+                "fingerprint_skipped_count" to result.fingerprintSkippedCount,
                 "group_count" to groups.size,
                 "recoverable_bytes" to groups.sumOf { it.recoverableBytes },
                 "status" to status.analyticsValue,

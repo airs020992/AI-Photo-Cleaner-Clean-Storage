@@ -247,9 +247,10 @@ fun AIPhotoCleanerApp() {
                     summary = scanSummary,
                 )
                 similarScreenshotScanStartedAtMillis = SystemClock.elapsedRealtime()
-                val freshSimilarScreenshotGroups = withContext(Dispatchers.IO) {
-                    repository.scanSimilarScreenshotGroups()
+                val freshSimilarScreenshotResult = withContext(Dispatchers.IO) {
+                    repository.scanSimilarScreenshotGroupResult()
                 }
+                val freshSimilarScreenshotGroups = freshSimilarScreenshotResult.groups
                 similarScreenshotGroups = freshSimilarScreenshotGroups
                 similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh
                 telemetry.track(
@@ -257,7 +258,7 @@ fun AIPhotoCleanerApp() {
                         elapsedMillis = SystemClock.elapsedRealtime() -
                             (similarScreenshotScanStartedAtMillis ?: SystemClock.elapsedRealtime()),
                         scanSummary = scanSummary,
-                        groups = freshSimilarScreenshotGroups,
+                        result = freshSimilarScreenshotResult,
                         status = SimilarScreenshotReviewStatus.Fresh,
                         source = similarScreenshotScanSource,
                     ),

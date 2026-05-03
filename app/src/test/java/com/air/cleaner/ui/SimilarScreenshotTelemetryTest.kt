@@ -1,6 +1,7 @@
 package com.air.cleaner.ui
 
 import com.air.cleaner.data.media.MediaScanSummary
+import com.air.cleaner.data.media.SimilarScreenshotScanResult
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
 import com.air.cleaner.domain.cleaning.MediaType
@@ -192,7 +193,11 @@ class SimilarScreenshotTelemetryTest {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,
             scanSummary = scanSummary(screenshotCount = 18),
-            groups = listOf(group("safe", recoverableBytes = 2_000L)),
+            result = SimilarScreenshotScanResult(
+                groups = listOf(group("safe", recoverableBytes = 2_000L)),
+                fingerprintCandidateCount = 4,
+                fingerprintSkippedCount = 14,
+            ),
             status = SimilarScreenshotReviewStatus.Fresh,
             source = SimilarScreenshotScanSource.ColdScan,
         )
@@ -202,6 +207,8 @@ class SimilarScreenshotTelemetryTest {
             mapOf<String, Any>(
                 "elapsed_ms" to 1_240L,
                 "screenshot_count" to 18,
+                "fingerprint_candidate_count" to 4,
+                "fingerprint_skipped_count" to 14,
                 "group_count" to 1,
                 "recoverable_bytes" to 2_000L,
                 "status" to "fresh",

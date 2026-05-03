@@ -20,23 +20,40 @@ data class SimilarScreenshotCandidate(
         )
 }
 
+data class SimilarScreenshotScanResult(
+    val groups: List<DuplicateGroup>,
+    val fingerprintCandidateCount: Int,
+    val fingerprintSkippedCount: Int,
+)
+
 class SimilarScreenshotScanner(
     private val perceptualFingerprint: (SimilarScreenshotCandidate) -> String?,
     private val maxHashDistance: Int = DEFAULT_MAX_HASH_DISTANCE,
     private val maxNearbyCaptureGapMillis: Long = DEFAULT_MAX_NEARBY_CAPTURE_GAP_MILLIS,
 ) {
     fun findSimilarGroups(candidates: List<SimilarScreenshotCandidate>): List<DuplicateGroup> {
+        return findSimilarGroupResult(candidates).groups
+    }
+
+    fun findSimilarGroupResult(candidates: List<SimilarScreenshotCandidate>): SimilarScreenshotScanResult {
         var groupIndex = 0
-        return candidates
+        var fingerprintCandidateCount = 0
+        var fingerprintSkippedCount = 0
+        val groups = candidates
             .asSequence()
             .filter { it.isScreenshot() }
             .filter { it.item.width != null && it.item.height != null }
             .groupBy { "${it.item.width}:${it.item.height}" }
             .filterValues { it.size > 1 }
             .values
-            .map { bucket -> bucket.withNearbyCaptureNeighbors() }
+            .map { bucket ->
+                val nearbyBucket = bucket.withNearbyCaptureNeighbors()
+                fingerprintSkippedCount += bucket.size - nearbyBucket.size
+                nearbyBucket
+            }
             .filter { it.size > 1 }
             .flatMap { bucket ->
+                fingerprintCandidateCount += bucket.size
                 val fingerprinted = bucket.mapNotNull { candidate ->
                     perceptualFingerprint(candidate)?.let { hash ->
                         FingerprintedScreenshot(candidate.item, hash)
@@ -53,6 +70,11 @@ class SimilarScreenshotScanner(
                 compareByDescending<DuplicateGroup> { it.recoverableBytes }
                     .thenByDescending { group -> group.items.maxOf { it.dateTakenMillis } },
             )
+        return SimilarScreenshotScanResult(
+            groups = groups,
+            fingerprintCandidateCount = fingerprintCandidateCount,
+            fingerprintSkippedCount = fingerprintSkippedCount,
+        )
     }
 
     private fun List<FingerprintedScreenshot>.toSimilarGroups(nextKey: () -> String): List<DuplicateGroup> {

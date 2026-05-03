@@ -284,6 +284,8 @@ class AnalyticsDiagnosticsTelemetryTest {
                     "empty_result" to false,
                     "elapsed_ms" to 6_275L,
                     "scan_source" to "cold_scan",
+                    "fingerprint_candidate_count" to 38L,
+                    "fingerprint_skipped_count" to 81L,
                 ),
             ),
             CleanerTelemetryEvent(
@@ -308,11 +310,11 @@ class AnalyticsDiagnosticsTelemetryTest {
             Next: review the similar photo groups.
             Similar photos cache: hit=true, groups=1, filtered_empty=false, elapsed_ms=120.
             Diagnosis: cache hit opened saved Similar photos results quickly while a fresh scan can continue in the background.
-            Similar photos scan: source=cold_scan, screenshots=119, groups=1, empty=false, elapsed_ms=6275.
-            Diagnosis: cold scan found similar groups. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target.
+            Similar photos scan: source=cold_scan, screenshots=119, fingerprint_candidates=38, fingerprint_skipped=81, groups=1, empty=false, elapsed_ms=6275.
+            Diagnosis: cold scan found similar groups after skipping 81 isolated screenshots before fingerprinting. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target.
             Last local event: similar_screenshots_scan_completed
             Recent events:
-            1. similar_screenshots_scan_completed | elapsed_ms=6275, empty_result=false, group_count=1, scan_source=cold_scan, screenshot_count=119
+            1. similar_screenshots_scan_completed | elapsed_ms=6275, empty_result=false, fingerprint_candidate_count=38, fingerprint_skipped_count=81, group_count=1, scan_source=cold_scan, screenshot_count=119
             2. similar_screenshots_cache_loaded | cache_hit=true, elapsed_ms=120, filtered_empty=false, group_count=1, recoverable_bytes=5715644
             """.trimIndent(),
             report,

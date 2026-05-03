@@ -54,7 +54,7 @@ class AndroidMediaStoreRepository(
         )
     }
 
-    override suspend fun scanSimilarScreenshotGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
+    override suspend fun scanSimilarScreenshotGroupResult(): SimilarScreenshotScanResult = withContext(Dispatchers.IO) {
         SimilarScreenshotScanner(
             perceptualFingerprint = { candidate ->
                 similarScreenshotFingerprintCache.getOrPut(candidate.fingerprintCacheKey) {
@@ -65,7 +65,7 @@ class AndroidMediaStoreRepository(
                     }.getOrNull()
                 }
             },
-        ).findSimilarGroups(
+        ).findSimilarGroupResult(
             scanImageItems().map { itemWithPath ->
                 SimilarScreenshotCandidate(
                     item = itemWithPath.item,

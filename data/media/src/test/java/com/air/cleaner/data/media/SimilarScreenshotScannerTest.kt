@@ -157,9 +157,11 @@ class SimilarScreenshotScannerTest {
             candidate("2", "Screenshot_2.png", "uri-b", dateMillis = 30 * 60 * 1_000L),
         )
 
-        val groups = scanner.findSimilarGroups(candidates)
+        val result = scanner.findSimilarGroupResult(candidates)
 
-        assertTrue(groups.isEmpty())
+        assertTrue(result.groups.isEmpty())
+        assertEquals(0, result.fingerprintCandidateCount)
+        assertEquals(2, result.fingerprintSkippedCount)
         assertTrue(requestedKeys.isEmpty())
     }
 
