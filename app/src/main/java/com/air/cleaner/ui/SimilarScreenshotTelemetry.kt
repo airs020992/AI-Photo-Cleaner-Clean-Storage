@@ -33,9 +33,10 @@ internal class SafeCleanerTelemetry(
     private val delegate: CleanerTelemetry,
 ) : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
+        val safeProperties = SAFE_ANALYTICS_SCHEMA[event.name] ?: return
         delegate.track(
             event.copy(
-                properties = event.properties.filterKeys { it in SAFE_ANALYTICS_PROPERTIES },
+                properties = event.properties.filterKeys { it in safeProperties },
             ),
         )
     }
@@ -47,20 +48,37 @@ internal class LogcatCleanerTelemetry : CleanerTelemetry {
     }
 }
 
-private val SAFE_ANALYTICS_PROPERTIES = setOf(
-    "confirmed",
-    "current_group_count",
-    "elapsed_ms",
-    "empty_result",
-    "group_count",
-    "groups_loaded",
-    "priority_groups",
-    "recoverable_bytes",
-    "screenshot_count",
-    "selected_bytes",
-    "selected_count",
-    "status",
-    "total_groups",
+private val SAFE_ANALYTICS_SCHEMA = mapOf(
+    "similar_screenshots_entry_tapped" to setOf(
+        "groups_loaded",
+        "group_count",
+        "recoverable_bytes",
+        "status",
+    ),
+    "similar_screenshots_rescan_tapped" to setOf(
+        "current_group_count",
+        "status",
+    ),
+    "similar_screenshots_scan_completed" to setOf(
+        "elapsed_ms",
+        "empty_result",
+        "group_count",
+        "recoverable_bytes",
+        "screenshot_count",
+        "status",
+    ),
+    "similar_screenshots_continue_tapped" to setOf(
+        "priority_groups",
+        "selected_bytes",
+        "selected_count",
+        "total_groups",
+    ),
+    "similar_screenshots_system_delete_result" to setOf(
+        "confirmed",
+        "priority_groups",
+        "selected_bytes",
+        "selected_count",
+    ),
 )
 
 internal object SimilarScreenshotTelemetry {

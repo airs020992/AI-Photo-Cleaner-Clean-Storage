@@ -71,6 +71,48 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun safeTelemetryDropsUnknownEventNames() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = SafeCleanerTelemetry(delegate = recordingTelemetry)
+
+        telemetry.track(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_private_debug",
+                properties = mapOf("elapsed_ms" to 800L),
+            ),
+        )
+
+        assertEquals(emptyList<CleanerTelemetryEvent>(), recordingTelemetry.events)
+    }
+
+    @Test
+    fun safeTelemetryKeepsOnlyPropertiesAllowedForThatEvent() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = SafeCleanerTelemetry(delegate = recordingTelemetry)
+
+        telemetry.track(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "elapsed_ms" to 800L,
+                    "selected_count" to 12,
+                    "confirmed" to true,
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                CleanerTelemetryEvent(
+                    name = "similar_screenshots_scan_completed",
+                    properties = mapOf<String, Any>("elapsed_ms" to 800L),
+                ),
+            ),
+            recordingTelemetry.events,
+        )
+    }
+
+    @Test
     fun scanCompletedEventCapturesLatencyAndResultQuality() {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,
