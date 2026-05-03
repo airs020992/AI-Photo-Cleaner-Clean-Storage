@@ -111,6 +111,8 @@ internal object SimilarScreenshotAnalyticsContract {
             parameters = listOf(
                 AnalyticsParameterContract("elapsed_ms", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("empty_result", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("fingerprint_cache_hit_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("fingerprint_cache_miss_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("fingerprint_candidate_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("fingerprint_skipped_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
@@ -322,6 +324,8 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
     val source = scanCompleted.properties["scan_source"] as? String
     val screenshotCount = scanCompleted.properties["screenshot_count"].asLongOrZero()
     val groupCount = scanCompleted.properties["group_count"].asLongOrZero()
+    val fingerprintCacheHitCount = scanCompleted.properties["fingerprint_cache_hit_count"].asLongOrZero()
+    val fingerprintCacheMissCount = scanCompleted.properties["fingerprint_cache_miss_count"].asLongOrZero()
     val fingerprintCandidateCount = scanCompleted.properties["fingerprint_candidate_count"].asLongOrZero()
     val fingerprintSkippedCount = scanCompleted.properties["fingerprint_skipped_count"].asLongOrZero()
     val emptyResult = scanCompleted.properties["empty_result"] as? Boolean ?: false
@@ -349,6 +353,10 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
             add("fingerprint_candidates=$fingerprintCandidateCount")
             add("fingerprint_skipped=$fingerprintSkippedCount")
         }
+        if (fingerprintCacheHitCount > 0L || fingerprintCacheMissCount > 0L) {
+            add("fingerprint_cache_hits=$fingerprintCacheHitCount")
+            add("fingerprint_cache_misses=$fingerprintCacheMissCount")
+        }
         add("groups=$groupCount")
         add("empty=$emptyResult")
         add("elapsed_ms=$elapsedMillis")
@@ -363,10 +371,32 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
                 elapsedMillis = elapsedMillis,
             ),
         )
+        addAll(
+            similarScreenshotFingerprintCacheLabels(
+                cacheHitCount = fingerprintCacheHitCount,
+                cacheMissCount = fingerprintCacheMissCount,
+            ),
+        )
         add(
             diagnosis,
         )
     }
+}
+
+private fun similarScreenshotFingerprintCacheLabels(
+    cacheHitCount: Long,
+    cacheMissCount: Long,
+): List<String> {
+    val lookupCount = cacheHitCount + cacheMissCount
+    if (lookupCount <= 0L) return emptyList()
+    val nextStep = if (cacheMissCount > cacheHitCount) {
+        "prioritize persistent fingerprint reuse before threshold tuning"
+    } else {
+        "focus on reducing fingerprint candidates and review quality"
+    }
+    return listOf(
+        "Cache: fingerprint cache reused $cacheHitCount/$lookupCount candidates; $cacheMissCount required decoding. Next: $nextStep.",
+    )
 }
 
 private fun similarScreenshotScanPerformanceLabels(
@@ -503,6 +533,8 @@ internal object SimilarScreenshotTelemetry {
             properties = mapOf(
                 "elapsed_ms" to elapsedMillis.coerceAtLeast(0L),
                 "screenshot_count" to (scanSummary?.screenshotCount ?: 0),
+                "fingerprint_cache_hit_count" to result.fingerprintCacheHitCount,
+                "fingerprint_cache_miss_count" to result.fingerprintCacheMissCount,
                 "fingerprint_candidate_count" to result.fingerprintCandidateCount,
                 "fingerprint_skipped_count" to result.fingerprintSkippedCount,
                 "group_count" to groups.size,

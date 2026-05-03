@@ -25,21 +25,43 @@ interface PerceptualFingerprintCache {
     fun getOrPut(
         key: PerceptualFingerprintCacheKey,
         compute: () -> String?,
-    ): String?
+    ): String? = getOrPutResult(key, compute).fingerprint
+
+    fun getOrPutResult(
+        key: PerceptualFingerprintCacheKey,
+        compute: () -> String?,
+    ): PerceptualFingerprintCacheResult
 }
+
+data class PerceptualFingerprintCacheResult(
+    val fingerprint: String?,
+    val cacheHit: Boolean,
+)
 
 class InMemoryPerceptualFingerprintCache : PerceptualFingerprintCache {
     private val fingerprints = mutableMapOf<String, String>()
 
-    override fun getOrPut(
+    override fun getOrPutResult(
         key: PerceptualFingerprintCacheKey,
         compute: () -> String?,
-    ): String? {
+    ): PerceptualFingerprintCacheResult {
         val storageKey = key.storageKey()
-        fingerprints[storageKey]?.let { return it }
-        val fingerprint = compute() ?: return null
+        fingerprints[storageKey]?.let {
+            return PerceptualFingerprintCacheResult(
+                fingerprint = it,
+                cacheHit = true,
+            )
+        }
+        val fingerprint = compute()
+            ?: return PerceptualFingerprintCacheResult(
+                fingerprint = null,
+                cacheHit = false,
+            )
         fingerprints[storageKey] = fingerprint
-        return fingerprint
+        return PerceptualFingerprintCacheResult(
+            fingerprint = fingerprint,
+            cacheHit = false,
+        )
     }
 }
 
@@ -51,15 +73,27 @@ class SharedPreferencesPerceptualFingerprintCache(
         Context.MODE_PRIVATE,
     )
 
-    override fun getOrPut(
+    override fun getOrPutResult(
         key: PerceptualFingerprintCacheKey,
         compute: () -> String?,
-    ): String? {
+    ): PerceptualFingerprintCacheResult {
         val storageKey = key.storageKey()
-        preferences.getString(storageKey, null)?.let { return it }
-        val fingerprint = compute() ?: return null
+        preferences.getString(storageKey, null)?.let {
+            return PerceptualFingerprintCacheResult(
+                fingerprint = it,
+                cacheHit = true,
+            )
+        }
+        val fingerprint = compute()
+            ?: return PerceptualFingerprintCacheResult(
+                fingerprint = null,
+                cacheHit = false,
+            )
         preferences.edit().putString(storageKey, fingerprint).apply()
-        return fingerprint
+        return PerceptualFingerprintCacheResult(
+            fingerprint = fingerprint,
+            cacheHit = false,
+        )
     }
 
     private companion object {

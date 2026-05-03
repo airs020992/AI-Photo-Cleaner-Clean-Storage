@@ -31,6 +31,26 @@ class PerceptualFingerprintCacheTest {
     }
 
     @Test
+    fun reportsCacheHitWhenFingerprintIsReused() {
+        val cache = InMemoryPerceptualFingerprintCache()
+        val key = PerceptualFingerprintCacheKey(
+            contentUri = "content://media/images/1",
+            sizeBytes = 1_912_800L,
+            dateMillis = 1_000L,
+            width = 1440,
+            height = 3120,
+        )
+
+        val first = cache.getOrPutResult(key) { "same-hash" }
+        val second = cache.getOrPutResult(key) { "new-hash" }
+
+        assertEquals("same-hash", first.fingerprint)
+        assertEquals(false, first.cacheHit)
+        assertEquals("same-hash", second.fingerprint)
+        assertEquals(true, second.cacheHit)
+    }
+
+    @Test
     fun recomputesFingerprintWhenMediaIdentityChanges() {
         val cache = InMemoryPerceptualFingerprintCache()
         val original = PerceptualFingerprintCacheKey(

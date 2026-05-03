@@ -55,15 +55,23 @@ class AndroidMediaStoreRepository(
     }
 
     override suspend fun scanSimilarScreenshotGroupResult(): SimilarScreenshotScanResult = withContext(Dispatchers.IO) {
-        SimilarScreenshotScanner(
+        var fingerprintCacheHitCount = 0
+        var fingerprintCacheMissCount = 0
+        val result = SimilarScreenshotScanner(
             perceptualFingerprint = { candidate ->
-                similarScreenshotFingerprintCache.getOrPut(candidate.fingerprintCacheKey) {
+                val cacheResult = similarScreenshotFingerprintCache.getOrPutResult(candidate.fingerprintCacheKey) {
                     runCatching {
                         contentResolver.openInputStream(Uri.parse(candidate.contentKey))?.use { inputStream ->
                             ImageContentFingerprinter.averageHash(inputStream)
                         }
                     }.getOrNull()
                 }
+                if (cacheResult.cacheHit) {
+                    fingerprintCacheHitCount += 1
+                } else {
+                    fingerprintCacheMissCount += 1
+                }
+                cacheResult.fingerprint
             },
         ).findSimilarGroupResult(
             scanImageItems().map { itemWithPath ->
@@ -74,6 +82,10 @@ class AndroidMediaStoreRepository(
                     cacheDateMillis = itemWithPath.dateModifiedMillis ?: itemWithPath.item.dateTakenMillis,
                 )
             },
+        )
+        result.copy(
+            fingerprintCacheHitCount = fingerprintCacheHitCount,
+            fingerprintCacheMissCount = fingerprintCacheMissCount,
         )
     }
 

@@ -24,6 +24,8 @@ data class SimilarScreenshotScanResult(
     val groups: List<DuplicateGroup>,
     val fingerprintCandidateCount: Int,
     val fingerprintSkippedCount: Int,
+    val fingerprintCacheHitCount: Int = 0,
+    val fingerprintCacheMissCount: Int = 0,
 )
 
 class SimilarScreenshotScanner(
