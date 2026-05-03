@@ -54,6 +54,8 @@ fun PhotoReviewScreen(
     noticeMessage: String? = null,
     emptyTitle: String = "No duplicate photos found",
     emptyMessage: String = "We only show likely matches for review. Nothing is selected or deleted automatically.",
+    emptyActionLabel: String? = null,
+    onEmptyAction: (() -> Unit)? = null,
     itemMatchLabel: String = "Duplicate",
 ) {
     var selectionState by remember(groups) {
@@ -91,6 +93,8 @@ fun PhotoReviewScreen(
             EmptyDuplicateReviewCard(
                 title = emptyTitle,
                 message = emptyMessage,
+                actionLabel = emptyActionLabel,
+                onAction = onEmptyAction,
             )
         } else {
             groups.forEachIndexed { index, group ->
@@ -302,6 +306,8 @@ private fun EmptyDuplicateReviewCard(
     title: String,
     message: String,
     modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -323,6 +329,11 @@ private fun EmptyDuplicateReviewCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (actionLabel != null && onAction != null) {
+                Button(onClick = onAction) {
+                    Text(actionLabel)
+                }
+            }
         }
     }
 }

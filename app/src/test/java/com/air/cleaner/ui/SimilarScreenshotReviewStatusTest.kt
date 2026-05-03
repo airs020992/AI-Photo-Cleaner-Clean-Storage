@@ -23,4 +23,28 @@ class SimilarScreenshotReviewStatusTest {
         assertNull(status.noticeTitle())
         assertNull(status.noticeMessage())
     }
+
+    @Test
+    fun freshEmptyResultsInviteManualRescan() {
+        val status = SimilarScreenshotReviewStatus.Fresh
+
+        assertEquals("No similar screenshots found", status.emptyTitle())
+        assertEquals(
+            "We scanned your library and only show high-confidence near-duplicates. Try again after taking more screenshots.",
+            status.emptyMessage(),
+        )
+        assertEquals("Rescan photos", status.emptyActionLabel())
+    }
+
+    @Test
+    fun filteredCacheExplainsWhyResultsDisappeared() {
+        val status = SimilarScreenshotReviewStatus.FilteredCacheEmpty
+
+        assertEquals("Saved results were updated", status.emptyTitle())
+        assertEquals(
+            "Previous matches included photos that no longer exist. We removed stale candidates and are checking your library again.",
+            status.emptyMessage(),
+        )
+        assertEquals("Rescan photos", status.emptyActionLabel())
+    }
 }

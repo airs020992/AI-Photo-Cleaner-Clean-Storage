@@ -78,6 +78,30 @@ class ContentUriPresenceVerifierTest {
         )
     }
 
+    @Test
+    fun reportsWhenCachedGroupsWereFilteredEmpty() {
+        val verifier = ContentUriPresenceVerifier(
+            exists = { uri -> uri == "content://images/missing" },
+        )
+
+        val result = verifier.stillPresentGroupResult(
+            listOf(
+                DuplicateGroup(
+                    key = "stale-group",
+                    items = listOf(
+                        item("1", "content://images/deleted-a"),
+                        item("2", "content://images/deleted-b"),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(1, result.sourceGroupCount)
+        assertEquals(2, result.sourceItemCount)
+        assertEquals(emptyList<DuplicateGroup>(), result.groups)
+        assertEquals(true, result.filteredToEmpty)
+    }
+
     private fun item(id: String, contentUri: String): MediaItem {
         return MediaItem(
             id = id,

@@ -12,7 +12,11 @@ class ContentUriPresenceVerifier(
     }
 
     fun stillPresentGroups(groups: List<DuplicateGroup>): List<DuplicateGroup> {
-        return groups.mapNotNull { group ->
+        return stillPresentGroupResult(groups).groups
+    }
+
+    fun stillPresentGroupResult(groups: List<DuplicateGroup>): CachedDuplicateGroupsResult {
+        val filteredGroups = groups.mapNotNull { group ->
             val existingItems = group.items.filter { item ->
                 item.contentUri?.let { uri -> exists(uri) } == true
             }
@@ -22,5 +26,18 @@ class ContentUriPresenceVerifier(
                 null
             }
         }
+        return CachedDuplicateGroupsResult(
+            groups = filteredGroups,
+            sourceGroupCount = groups.size,
+            sourceItemCount = groups.sumOf { group -> group.items.size },
+        )
     }
+}
+
+data class CachedDuplicateGroupsResult(
+    val groups: List<DuplicateGroup>,
+    val sourceGroupCount: Int,
+    val sourceItemCount: Int,
+) {
+    val filteredToEmpty: Boolean = sourceItemCount > 0 && groups.isEmpty()
 }

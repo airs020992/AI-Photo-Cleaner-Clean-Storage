@@ -146,12 +146,15 @@ fun AIPhotoCleanerApp() {
                 )
                 val shouldUseCachedSimilarResults = lastDeletedResult?.shouldRefreshScan != true
                 if (shouldUseCachedSimilarResults) {
-                    val cachedSimilarScreenshotGroups = withContext(Dispatchers.IO) {
-                        repository.cachedSimilarScreenshotGroups()
+                    val cachedSimilarScreenshotResult = withContext(Dispatchers.IO) {
+                        repository.cachedSimilarScreenshotGroupResult()
                     }
-                    if (cachedSimilarScreenshotGroups.isNotEmpty()) {
-                        similarScreenshotGroups = cachedSimilarScreenshotGroups
+                    if (cachedSimilarScreenshotResult.groups.isNotEmpty()) {
+                        similarScreenshotGroups = cachedSimilarScreenshotResult.groups
                         similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.CachedRefreshing
+                    } else if (cachedSimilarScreenshotResult.filteredToEmpty) {
+                        similarScreenshotGroups = emptyList()
+                        similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.FilteredCacheEmpty
                     } else {
                         similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
                     }
@@ -217,6 +220,11 @@ fun AIPhotoCleanerApp() {
                         scanComplete = similarScreenshotGroups != null,
                     )
                 },
+                onRescanSimilarScreenshots = {
+                    similarScreenshotGroups = null
+                    similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
+                    scanRefreshKey += 1
+                },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
@@ -263,6 +271,7 @@ private fun MainAppShell(
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
+    onRescanSimilarScreenshots: () -> Unit,
     onBackToPhotos: () -> Unit,
     pendingDeleteSummary: PhotoDeletionSummary?,
     deleteResult: PhotoDeletionResult?,
@@ -322,8 +331,10 @@ private fun MainAppShell(
                                 PhotoDeletionSummary.fromItems(selectionState.selectedItems),
                             )
                         },
-                        emptyTitle = "No similar screenshots found",
-                        emptyMessage = "Small visual differences are grouped only when confidence is high enough. Nothing is deleted automatically.",
+                        emptyTitle = similarScreenshotReviewStatus.emptyTitle(),
+                        emptyMessage = similarScreenshotReviewStatus.emptyMessage(),
+                        emptyActionLabel = similarScreenshotReviewStatus.emptyActionLabel(),
+                        onEmptyAction = onRescanSimilarScreenshots,
                         itemMatchLabel = "Similar screenshot",
                         noticeTitle = similarScreenshotReviewStatus.noticeTitle(),
                         noticeMessage = similarScreenshotReviewStatus.noticeMessage(),
@@ -939,6 +950,7 @@ private fun MainAppShellPreview() {
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onOpenSimilarScreenshots = {},
+            onRescanSimilarScreenshots = {},
             onBackToPhotos = {},
             pendingDeleteSummary = null,
             deleteResult = null,
