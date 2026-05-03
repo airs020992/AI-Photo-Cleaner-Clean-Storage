@@ -153,6 +153,27 @@ class PhotoReviewSelectionStateTest {
     }
 
     @Test
+    fun exposesNewestPreviewItemsPerGroup() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("oldest", 1_000L, 100L),
+                    mediaItem("newest", 1_000L, 500L),
+                    mediaItem("middle", 1_000L, 300L),
+                    mediaItem("newer", 1_000L, 400L),
+                    mediaItem("older", 1_000L, 200L),
+                    key = "screenshots",
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("newest", "newer", "middle", "older"),
+            state.previewItemsInGroup("screenshots").map { it.id },
+        )
+    }
+
+    @Test
     fun exposesSelectedItemsForDeleteConfirmation() {
         val state = PhotoReviewSelectionState.fromGroups(
             groups = listOf(

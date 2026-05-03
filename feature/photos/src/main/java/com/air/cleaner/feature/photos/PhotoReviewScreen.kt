@@ -413,6 +413,10 @@ private fun DuplicateGroupCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            PhotoReviewPreviewStrip(
+                items = selectionState.previewItemsInGroup(group.key),
+                extraCount = (group.items.size - 4).coerceAtLeast(0),
+            )
             val keepItem = group.keepItem(keepStrategy)
             group.items.sortedByDescending { it.dateTakenMillis }.forEach { item ->
                 PhotoReviewRow(
@@ -421,6 +425,60 @@ private fun DuplicateGroupCard(
                     selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
                     onToggle = { onToggle(item.id) },
                     itemMatchLabel = itemMatchLabel,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoReviewPreviewStrip(
+    items: List<MediaItem>,
+    extraCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.forEach { item ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (item.contentUri != null) {
+                    AsyncImage(
+                        model = item.contentUri,
+                        contentDescription = item.displayName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Text(
+                        text = item.displayName.take(1).uppercase(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+        }
+        if (extraCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(72.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "+$extraCount more",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

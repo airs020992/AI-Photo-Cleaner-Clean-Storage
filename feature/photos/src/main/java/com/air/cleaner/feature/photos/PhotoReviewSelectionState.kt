@@ -33,6 +33,13 @@ data class PhotoReviewSelectionState(
         return selectedItemsInGroup(groupKey).sumOf { it.sizeBytes }
     }
 
+    fun previewItemsInGroup(groupKey: String, maxItems: Int = 4): List<MediaItem> {
+        val group = groups.firstOrNull { it.key == groupKey } ?: return emptyList()
+        return group.items
+            .sortedByDescending { it.dateTakenMillis }
+            .take(maxItems.coerceAtLeast(0))
+    }
+
     fun toggle(itemId: String): PhotoReviewSelectionState {
         val nextSelectedIds = if (itemId in selectedIds) {
             selectedIds - itemId
