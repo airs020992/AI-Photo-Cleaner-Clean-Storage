@@ -59,6 +59,7 @@ fun PhotoReviewScreen(
     onEmptyAction: (() -> Unit)? = null,
     itemMatchLabel: String = "Duplicate",
     groupMatchExplanation: ((DuplicateGroup) -> String?)? = null,
+    groupTrustSummary: ((DuplicateGroup) -> SimilarScreenshotTrustSummary?)? = null,
     keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
     var selectionState by remember(groups, keepStrategy) {
@@ -118,6 +119,7 @@ fun PhotoReviewScreen(
                         },
                         itemMatchLabel = itemMatchLabel,
                         matchExplanation = groupMatchExplanation?.invoke(group),
+                        trustSummary = groupTrustSummary?.invoke(group),
                         keepStrategy = keepStrategy,
                     )
                 }
@@ -473,6 +475,7 @@ private fun DuplicateGroupCard(
     modifier: Modifier = Modifier,
     itemMatchLabel: String = "Duplicate",
     matchExplanation: String? = null,
+    trustSummary: SimilarScreenshotTrustSummary? = null,
     keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
     Surface(
@@ -527,6 +530,9 @@ private fun DuplicateGroupCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            trustSummary?.let { summary ->
+                SimilarScreenshotTrustSummaryBlock(summary = summary)
+            }
             PhotoReviewPreviewStrip(
                 items = selectionState.previewItemsInGroup(group.key),
                 extraCount = (group.items.size - 4).coerceAtLeast(0),
@@ -539,6 +545,36 @@ private fun DuplicateGroupCard(
                     selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
                     onToggle = { onToggle(item.id) },
                     itemMatchLabel = itemMatchLabel,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimilarScreenshotTrustSummaryBlock(
+    summary: SimilarScreenshotTrustSummary,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = summary.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            summary.lines.forEach { line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

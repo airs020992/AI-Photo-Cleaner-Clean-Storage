@@ -91,6 +91,7 @@ import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import com.air.cleaner.feature.photos.PhotoReviewKeepStrategy
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import com.air.cleaner.feature.photos.similarScreenshotMatchExplanation
+import com.air.cleaner.feature.photos.similarScreenshotTrustSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -368,6 +369,9 @@ private fun MainAppShell(
                         onEmptyAction = onRescanSimilarScreenshots,
                         itemMatchLabel = "Similar screenshot",
                         groupMatchExplanation = { group -> group.similarScreenshotMatchExplanation() },
+                        groupTrustSummary = { group ->
+                            group.similarScreenshotTrustSummary(PhotoReviewKeepStrategy.Newest)
+                        },
                         noticeTitle = similarScreenshotReviewStatus.noticeTitle(),
                         noticeMessage = similarScreenshotReviewStatus.noticeMessage(),
                         keepStrategy = PhotoReviewKeepStrategy.Newest,
