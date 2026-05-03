@@ -363,7 +363,7 @@ private fun MainAppShell(
                             postDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots
                         },
                         emptyTitle = similarScreenshotReviewStatus.emptyTitle(),
-                        emptyMessage = similarScreenshotReviewStatus.emptyMessage(),
+                        emptyMessage = similarScreenshotReviewStatus.emptyMessage(scanStatus),
                         emptyActionLabel = similarScreenshotReviewStatus.emptyActionLabel(),
                         onEmptyAction = onRescanSimilarScreenshots,
                         itemMatchLabel = "Similar screenshot",

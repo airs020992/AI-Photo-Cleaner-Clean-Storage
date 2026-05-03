@@ -53,4 +53,27 @@ internal fun SimilarScreenshotReviewStatus.emptyMessage(): String {
     }
 }
 
+internal fun SimilarScreenshotReviewStatus.emptyMessage(scanStatus: MediaScanStatus): String {
+    val screenshotCount = scanStatus.summary?.screenshotCount
+    return when (this) {
+        SimilarScreenshotReviewStatus.FilteredCacheEmpty -> {
+            val scope = if (screenshotCount == null) {
+                "Current scan: screenshot scope is still being counted."
+            } else {
+                "Current scan: $screenshotCount screenshots in scope."
+            }
+            "${emptyMessage()}\n\n$scope"
+        }
+        SimilarScreenshotReviewStatus.Loading,
+        SimilarScreenshotReviewStatus.CachedRefreshing,
+        SimilarScreenshotReviewStatus.Fresh -> {
+            if (screenshotCount == null) {
+                emptyMessage()
+            } else {
+                "We checked $screenshotCount screenshots for near-identical layouts and tiny visual changes. No safe review groups passed the confidence threshold yet.\n\nWhat to try: take 2-3 screenshots of the same screen, then tap Rescan photos."
+            }
+        }
+    }
+}
+
 internal fun SimilarScreenshotReviewStatus.emptyActionLabel(): String = "Rescan photos"
