@@ -49,6 +49,7 @@ fun PhotoReviewScreen(
     onBack: () -> Unit,
     onContinue: (PhotoReviewSelectionState) -> Unit,
     modifier: Modifier = Modifier,
+    postDeleteStatus: PhotoPostDeleteStatus? = null,
 ) {
     var selectionState by remember(groups) {
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups))
@@ -71,6 +72,9 @@ fun PhotoReviewScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        postDeleteStatus?.let { status ->
+            PostDeleteStatusCard(status = status)
+        }
 
         if (groups.isEmpty()) {
             EmptyDuplicateReviewCard()
@@ -106,6 +110,36 @@ fun PhotoReviewScreen(
             ) {
                 Text("Continue")
             }
+        }
+    }
+}
+
+@Composable
+private fun PostDeleteStatusCard(
+    status: PhotoPostDeleteStatus,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = status.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = "${status.message} | ${formatBytes(status.remainingRecoverableBytes)} remaining",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
         }
     }
 }

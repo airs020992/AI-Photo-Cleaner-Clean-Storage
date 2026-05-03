@@ -82,6 +82,7 @@ import com.air.cleaner.feature.photos.PhotoDeleteConfirmationDialog
 import com.air.cleaner.feature.photos.PhotoDeleteResultDialog
 import com.air.cleaner.feature.photos.PhotoDeletionResult
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
+import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -107,6 +108,7 @@ fun AIPhotoCleanerApp() {
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
+            var lastDeletedResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var scanRefreshKey by remember { mutableStateOf(0) }
             val deleteLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartIntentSenderForResult(),
@@ -118,6 +120,7 @@ fun AIPhotoCleanerApp() {
                     )
                     deleteResult = deletionResult
                     if (deletionResult.shouldRefreshScan) {
+                        lastDeletedResult = deletionResult
                         scanRefreshKey += 1
                     }
                 }
@@ -142,6 +145,10 @@ fun AIPhotoCleanerApp() {
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
+                postDeleteStatus = PhotoPostDeleteStatus.from(
+                    result = lastDeletedResult,
+                    currentGroups = duplicatePhotoGroups.orEmpty(),
+                ),
                 onRequestDeleteConfirmation = { pendingDeleteSummary = it },
                 onDismissDeleteConfirmation = { pendingDeleteSummary = null },
                 onConfirmDelete = { summary ->
@@ -176,6 +183,7 @@ private fun MainAppShell(
     onBackToPhotos: () -> Unit,
     pendingDeleteSummary: PhotoDeletionSummary?,
     deleteResult: PhotoDeletionResult?,
+    postDeleteStatus: PhotoPostDeleteStatus?,
     onRequestDeleteConfirmation: (PhotoDeletionSummary) -> Unit,
     onDismissDeleteConfirmation: () -> Unit,
     onConfirmDelete: (PhotoDeletionSummary) -> Unit,
@@ -210,6 +218,7 @@ private fun MainAppShell(
                             PhotoDeletionSummary.fromItems(selectionState.selectedItems),
                         )
                     },
+                    postDeleteStatus = postDeleteStatus,
                 )
             }
         }
@@ -725,6 +734,7 @@ private fun MainAppShellPreview() {
             onBackToPhotos = {},
             pendingDeleteSummary = null,
             deleteResult = null,
+            postDeleteStatus = null,
             onRequestDeleteConfirmation = {},
             onDismissDeleteConfirmation = {},
             onConfirmDelete = {},
