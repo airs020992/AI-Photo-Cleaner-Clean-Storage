@@ -8,6 +8,13 @@ enum class PhotoReviewKeepStrategy {
     Newest,
 }
 
+enum class PhotoReviewSelectionAction(val analyticsValue: String) {
+    ItemToggle("item_toggle"),
+    GroupClear("group_clear"),
+    GroupSuggested("group_suggested"),
+    PreviewToggle("preview_toggle"),
+}
+
 data class PhotoReviewSelectionState(
     private val groups: List<DuplicateGroup>,
     private val selectedIds: Set<String>,

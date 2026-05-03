@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,8 @@ fun PhotoReviewScreen(
     emptyMessage: String = "We only show likely matches for review. Nothing is selected or deleted automatically.",
     emptyActionLabel: String? = null,
     onEmptyAction: (() -> Unit)? = null,
+    onReviewReady: (PhotoReviewSelectionState) -> Unit = {},
+    onSelectionChanged: (PhotoReviewSelectionState, PhotoReviewSelectionAction) -> Unit = { _, _ -> },
     itemMatchLabel: String = "Duplicate",
     groupMatchExplanation: ((DuplicateGroup) -> String?)? = null,
     groupTrustSummary: ((DuplicateGroup) -> SimilarScreenshotTrustSummary?)? = null,
@@ -95,6 +98,10 @@ fun PhotoReviewScreen(
         null
     }
     val visibleGroups = reviewWorkflow?.groups ?: groups
+
+    LaunchedEffect(groups, keepStrategy) {
+        onReviewReady(selectionState)
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -154,13 +161,28 @@ fun PhotoReviewScreen(
                             group = group,
                             selectionState = selectionState,
                             onToggle = { itemId ->
-                                selectionState = selectionState.toggle(itemId)
+                                val previousSelectionState = selectionState
+                                val nextSelectionState = selectionState.toggle(itemId)
+                                selectionState = nextSelectionState
+                                if (nextSelectionState != previousSelectionState) {
+                                    onSelectionChanged(nextSelectionState, PhotoReviewSelectionAction.ItemToggle)
+                                }
                             },
                             onDeselectGroup = {
-                                selectionState = selectionState.deselectGroup(group.key)
+                                val previousSelectionState = selectionState
+                                val nextSelectionState = selectionState.deselectGroup(group.key)
+                                selectionState = nextSelectionState
+                                if (nextSelectionState != previousSelectionState) {
+                                    onSelectionChanged(nextSelectionState, PhotoReviewSelectionAction.GroupClear)
+                                }
                             },
                             onResetGroup = {
-                                selectionState = selectionState.resetGroup(group.key, keepStrategy)
+                                val previousSelectionState = selectionState
+                                val nextSelectionState = selectionState.resetGroup(group.key, keepStrategy)
+                                selectionState = nextSelectionState
+                                if (nextSelectionState != previousSelectionState) {
+                                    onSelectionChanged(nextSelectionState, PhotoReviewSelectionAction.GroupSuggested)
+                                }
                             },
                             itemMatchLabel = itemMatchLabel,
                             matchExplanation = groupMatchExplanation?.invoke(group),
@@ -212,7 +234,12 @@ fun PhotoReviewScreen(
                     previewRequest = request.copy(itemId = session.nextItem.id)
                 },
                 onToggleSelection = {
-                    selectionState = selectionState.toggle(item.id)
+                    val previousSelectionState = selectionState
+                    val nextSelectionState = selectionState.toggle(item.id)
+                    selectionState = nextSelectionState
+                    if (nextSelectionState != previousSelectionState) {
+                        onSelectionChanged(nextSelectionState, PhotoReviewSelectionAction.PreviewToggle)
+                    }
                 },
                 onDismiss = { previewRequest = null },
             )

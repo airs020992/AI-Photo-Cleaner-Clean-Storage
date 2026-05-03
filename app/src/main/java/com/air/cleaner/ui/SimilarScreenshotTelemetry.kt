@@ -90,12 +90,43 @@ internal object SimilarScreenshotAnalyticsContract {
             ),
         ),
         AnalyticsEventContract(
+            name = "similar_screenshots_review_shown",
+            parameters = listOf(
+                AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("status", AnalyticsParameterType.String),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_selection_changed",
+            parameters = listOf(
+                AnalyticsParameterContract("action", AnalyticsParameterType.String),
+                AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("total_groups", AnalyticsParameterType.Long),
+            ),
+        ),
+        AnalyticsEventContract(
             name = "similar_screenshots_continue_tapped",
             parameters = listOf(
                 AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("total_groups", AnalyticsParameterType.Long),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_delete_requested",
+            parameters = listOf(
+                AnalyticsParameterContract("missing_access_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("system_dialog_available", AnalyticsParameterType.Boolean),
             ),
         ),
         AnalyticsEventContract(
@@ -214,6 +245,45 @@ internal object SimilarScreenshotTelemetry {
         )
     }
 
+    fun reviewShown(
+        groups: List<DuplicateGroup>,
+        selectedCount: Int,
+        selectedBytes: Long,
+        priorityGroups: Int,
+        status: SimilarScreenshotReviewStatus,
+    ): CleanerTelemetryEvent {
+        return CleanerTelemetryEvent(
+            name = "similar_screenshots_review_shown",
+            properties = mapOf(
+                "group_count" to groups.size,
+                "recoverable_bytes" to groups.sumOf { it.recoverableBytes },
+                "selected_count" to selectedCount,
+                "selected_bytes" to selectedBytes,
+                "priority_groups" to priorityGroups,
+                "status" to status.analyticsValue,
+            ),
+        )
+    }
+
+    fun selectionChanged(
+        action: String,
+        selectedCount: Int,
+        selectedBytes: Long,
+        totalGroups: Int,
+        priorityGroups: Int,
+    ): CleanerTelemetryEvent {
+        return CleanerTelemetryEvent(
+            name = "similar_screenshots_selection_changed",
+            properties = mapOf(
+                "action" to action,
+                "selected_count" to selectedCount,
+                "selected_bytes" to selectedBytes,
+                "total_groups" to totalGroups,
+                "priority_groups" to priorityGroups,
+            ),
+        )
+    }
+
     fun continueTapped(
         summary: PhotoDeletionSummary,
         totalGroups: Int,
@@ -226,6 +296,22 @@ internal object SimilarScreenshotTelemetry {
                 "selected_bytes" to summary.bytesToDelete,
                 "total_groups" to totalGroups,
                 "priority_groups" to priorityGroups,
+            ),
+        )
+    }
+
+    fun deleteRequested(
+        summary: PhotoDeletionSummary,
+        systemDialogAvailable: Boolean,
+    ): CleanerTelemetryEvent {
+        return CleanerTelemetryEvent(
+            name = "similar_screenshots_delete_requested",
+            properties = mapOf(
+                "selected_count" to summary.itemCount,
+                "selected_bytes" to summary.bytesToDelete,
+                "priority_groups" to summary.priorityGroupCount,
+                "missing_access_count" to summary.missingDeleteAccessCount,
+                "system_dialog_available" to systemDialogAvailable,
             ),
         )
     }

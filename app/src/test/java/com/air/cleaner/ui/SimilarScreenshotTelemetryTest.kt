@@ -18,7 +18,10 @@ class SimilarScreenshotTelemetryTest {
                 "similar_screenshots_entry_tapped",
                 "similar_screenshots_rescan_tapped",
                 "similar_screenshots_scan_completed",
+                "similar_screenshots_review_shown",
+                "similar_screenshots_selection_changed",
                 "similar_screenshots_continue_tapped",
+                "similar_screenshots_delete_requested",
                 "similar_screenshots_system_delete_result",
             ),
             contracts.map { it.name }.toSet(),
@@ -193,6 +196,81 @@ class SimilarScreenshotTelemetryTest {
                 "selected_bytes" to 4_200L,
                 "total_groups" to 5,
                 "priority_groups" to 2,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
+    fun reviewShownEventCapturesInitialReviewQuality() {
+        val event = SimilarScreenshotTelemetry.reviewShown(
+            groups = listOf(
+                group("priority", recoverableBytes = 4_000L),
+                group("normal", recoverableBytes = 2_000L),
+            ),
+            selectedCount = 3,
+            selectedBytes = 6_000L,
+            priorityGroups = 1,
+            status = SimilarScreenshotReviewStatus.Fresh,
+        )
+
+        assertEquals("similar_screenshots_review_shown", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "group_count" to 2,
+                "recoverable_bytes" to 6_000L,
+                "selected_count" to 3,
+                "selected_bytes" to 6_000L,
+                "priority_groups" to 1,
+                "status" to "fresh",
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
+    fun selectionChangedEventCapturesUserTrustEditsWithoutPhotoIdentity() {
+        val event = SimilarScreenshotTelemetry.selectionChanged(
+            action = "group_clear",
+            selectedCount = 1,
+            selectedBytes = 2_500L,
+            totalGroups = 4,
+            priorityGroups = 2,
+        )
+
+        assertEquals("similar_screenshots_selection_changed", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "action" to "group_clear",
+                "selected_count" to 1,
+                "selected_bytes" to 2_500L,
+                "total_groups" to 4,
+                "priority_groups" to 2,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
+    fun deleteRequestedEventCapturesSystemDialogAvailability() {
+        val event = SimilarScreenshotTelemetry.deleteRequested(
+            summary = PhotoDeletionSummary(
+                itemCount = 3,
+                bytesToDelete = 4_200L,
+                contentUris = listOf("content://images/1", "content://images/2"),
+                highPriorityGroupCount = 1,
+            ),
+            systemDialogAvailable = false,
+        )
+
+        assertEquals("similar_screenshots_delete_requested", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "selected_count" to 3,
+                "selected_bytes" to 4_200L,
+                "priority_groups" to 1,
+                "missing_access_count" to 1,
+                "system_dialog_available" to false,
             ),
             event.properties,
         )

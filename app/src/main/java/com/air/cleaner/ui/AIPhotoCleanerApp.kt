@@ -95,8 +95,10 @@ import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import com.air.cleaner.feature.photos.PhotoReviewKeepStrategy
 import com.air.cleaner.feature.photos.PhotoReviewScreen
+import com.air.cleaner.feature.photos.SimilarScreenshotReviewFilter
 import com.air.cleaner.feature.photos.similarScreenshotMatchExplanation
 import com.air.cleaner.feature.photos.similarScreenshotTrustSummary
+import com.air.cleaner.feature.photos.toSimilarScreenshotReviewWorkflow
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -335,6 +337,14 @@ fun AIPhotoCleanerApp() {
                 },
                 onConfirmDelete = { summary ->
                     val sender = context.createSystemDeleteRequest(summary.contentUris)
+                    if (pendingDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots) {
+                        telemetry.track(
+                            SimilarScreenshotTelemetry.deleteRequested(
+                                summary = summary,
+                                systemDialogAvailable = sender != null,
+                            ),
+                        )
+                    }
                     if (sender == null) {
                         deleteResult = PhotoDeletionResult.blocked(summary)
                         pendingDeleteSummary = null
@@ -458,6 +468,28 @@ private fun MainAppShell(
                             onRequestDeleteConfirmation(
                                 summary,
                                 PhotoDeleteReviewContext.SimilarScreenshots,
+                            )
+                        },
+                        onReviewReady = { selectionState ->
+                            telemetry.track(
+                                SimilarScreenshotTelemetry.reviewShown(
+                                    groups = similarScreenshotGroups,
+                                    selectedCount = selectionState.selectedCount,
+                                    selectedBytes = selectionState.selectedBytes,
+                                    priorityGroups = similarScreenshotGroups.priorityGroupCountForSimilarScreenshots(),
+                                    status = similarScreenshotReviewStatus,
+                                ),
+                            )
+                        },
+                        onSelectionChanged = { selectionState, action ->
+                            telemetry.track(
+                                SimilarScreenshotTelemetry.selectionChanged(
+                                    action = action.analyticsValue,
+                                    selectedCount = selectionState.selectedCount,
+                                    selectedBytes = selectionState.selectedBytes,
+                                    totalGroups = similarScreenshotGroups.size,
+                                    priorityGroups = similarScreenshotGroups.priorityGroupCountForSimilarScreenshots(),
+                                ),
                             )
                         },
                         postDeleteStatus = postDeleteStatus.takeIf {
@@ -1105,6 +1137,13 @@ private fun formatBytes(bytes: Long): String {
     }
     val gigabytes = megabytes / 1024.0
     return String.format("%.1f GB", gigabytes)
+}
+
+private fun List<DuplicateGroup>.priorityGroupCountForSimilarScreenshots(): Int {
+    return toSimilarScreenshotReviewWorkflow(
+        keepStrategy = PhotoReviewKeepStrategy.Newest,
+        filter = SimilarScreenshotReviewFilter.All,
+    ).needsReviewGroups
 }
 
 private fun Map<String, Any>.toDiagnosticsLabel(): String {
