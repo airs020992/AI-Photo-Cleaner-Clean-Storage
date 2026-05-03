@@ -353,9 +353,31 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
         add("empty=$emptyResult")
         add("elapsed_ms=$elapsedMillis")
     }.joinToString(separator = ", ")
+    return buildList {
+        add(
+            "$scanLabelPrefix $scanMetrics.",
+        )
+        addAll(
+            similarScreenshotScanPerformanceLabels(
+                source = source,
+                elapsedMillis = elapsedMillis,
+            ),
+        )
+        add(
+            diagnosis,
+        )
+    }
+}
+
+private fun similarScreenshotScanPerformanceLabels(
+    source: String?,
+    elapsedMillis: Long,
+): List<String> {
+    if (source != SimilarScreenshotScanSource.ColdScan.analyticsValue) return emptyList()
+    if (elapsedMillis <= SIMILAR_SCREENSHOT_COLD_SCAN_TARGET_MS) return emptyList()
+    val overBudgetMillis = elapsedMillis - SIMILAR_SCREENSHOT_COLD_SCAN_TARGET_MS
     return listOf(
-        "$scanLabelPrefix $scanMetrics.",
-        diagnosis,
+        "Performance: cold scan is ${overBudgetMillis}ms over the ${SIMILAR_SCREENSHOT_COLD_SCAN_TARGET_MS}ms target. Next: reduce fingerprint candidates or reuse cached fingerprints before tuning match quality.",
     )
 }
 
@@ -599,6 +621,8 @@ internal enum class SimilarScreenshotScanSource {
     ManualRescan,
     PostDeleteRefresh,
 }
+
+private const val SIMILAR_SCREENSHOT_COLD_SCAN_TARGET_MS = 3_500L
 
 private val SimilarScreenshotScanSource.analyticsValue: String
     get() = when (this) {
