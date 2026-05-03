@@ -24,6 +24,8 @@ data class SimilarScreenshotScanResult(
     val groups: List<DuplicateGroup>,
     val fingerprintCandidateCount: Int,
     val fingerprintSkippedCount: Int,
+    val fingerprintTimeSkippedCount: Int = 0,
+    val fingerprintSizeSkippedCount: Int = 0,
     val fingerprintCacheHitCount: Int = 0,
     val fingerprintCacheMissCount: Int = 0,
 )
@@ -42,6 +44,8 @@ class SimilarScreenshotScanner(
         var groupIndex = 0
         var fingerprintCandidateCount = 0
         var fingerprintSkippedCount = 0
+        var fingerprintTimeSkippedCount = 0
+        var fingerprintSizeSkippedCount = 0
         val groups = candidates
             .asSequence()
             .filter { it.isScreenshot() }
@@ -52,7 +56,11 @@ class SimilarScreenshotScanner(
             .map { bucket ->
                 val nearbyBucket = bucket.withNearbyCaptureNeighbors()
                 val sizeNearbyBucket = nearbyBucket.withNearbySizeNeighbors()
-                fingerprintSkippedCount += bucket.size - sizeNearbyBucket.size
+                val timeSkippedCount = bucket.size - nearbyBucket.size
+                val sizeSkippedCount = nearbyBucket.size - sizeNearbyBucket.size
+                fingerprintTimeSkippedCount += timeSkippedCount
+                fingerprintSizeSkippedCount += sizeSkippedCount
+                fingerprintSkippedCount += timeSkippedCount + sizeSkippedCount
                 sizeNearbyBucket
             }
             .filter { it.size > 1 }
@@ -78,6 +86,8 @@ class SimilarScreenshotScanner(
             groups = groups,
             fingerprintCandidateCount = fingerprintCandidateCount,
             fingerprintSkippedCount = fingerprintSkippedCount,
+            fingerprintTimeSkippedCount = fingerprintTimeSkippedCount,
+            fingerprintSizeSkippedCount = fingerprintSizeSkippedCount,
         )
     }
 

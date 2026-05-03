@@ -114,7 +114,9 @@ internal object SimilarScreenshotAnalyticsContract {
                 AnalyticsParameterContract("fingerprint_cache_hit_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("fingerprint_cache_miss_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("fingerprint_candidate_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("fingerprint_size_skipped_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("fingerprint_skipped_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("fingerprint_time_skipped_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("scan_source", AnalyticsParameterType.String),
@@ -328,6 +330,8 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
     val fingerprintCacheMissCount = scanCompleted.properties["fingerprint_cache_miss_count"].asLongOrZero()
     val fingerprintCandidateCount = scanCompleted.properties["fingerprint_candidate_count"].asLongOrZero()
     val fingerprintSkippedCount = scanCompleted.properties["fingerprint_skipped_count"].asLongOrZero()
+    val fingerprintTimeSkippedCount = scanCompleted.properties["fingerprint_time_skipped_count"].asLongOrZero()
+    val fingerprintSizeSkippedCount = scanCompleted.properties["fingerprint_size_skipped_count"].asLongOrZero()
     val emptyResult = scanCompleted.properties["empty_result"] as? Boolean ?: false
     val elapsedMillis = scanCompleted.properties["elapsed_ms"].asLongOrZero()
     val diagnosis = when {
@@ -352,6 +356,10 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
         if (fingerprintCandidateCount > 0L || fingerprintSkippedCount > 0L) {
             add("fingerprint_candidates=$fingerprintCandidateCount")
             add("fingerprint_skipped=$fingerprintSkippedCount")
+            if (fingerprintTimeSkippedCount > 0L || fingerprintSizeSkippedCount > 0L) {
+                add("fingerprint_time_skipped=$fingerprintTimeSkippedCount")
+                add("fingerprint_size_skipped=$fingerprintSizeSkippedCount")
+            }
         }
         if (fingerprintCacheHitCount > 0L || fingerprintCacheMissCount > 0L) {
             add("fingerprint_cache_hits=$fingerprintCacheHitCount")
@@ -545,6 +553,8 @@ internal object SimilarScreenshotTelemetry {
                 "fingerprint_cache_miss_count" to result.fingerprintCacheMissCount,
                 "fingerprint_candidate_count" to result.fingerprintCandidateCount,
                 "fingerprint_skipped_count" to result.fingerprintSkippedCount,
+                "fingerprint_time_skipped_count" to result.fingerprintTimeSkippedCount,
+                "fingerprint_size_skipped_count" to result.fingerprintSizeSkippedCount,
                 "group_count" to groups.size,
                 "recoverable_bytes" to groups.sumOf { it.recoverableBytes },
                 "status" to status.analyticsValue,

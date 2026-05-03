@@ -162,6 +162,8 @@ class SimilarScreenshotScannerTest {
         assertTrue(result.groups.isEmpty())
         assertEquals(0, result.fingerprintCandidateCount)
         assertEquals(2, result.fingerprintSkippedCount)
+        assertEquals(2, result.fingerprintTimeSkippedCount)
+        assertEquals(0, result.fingerprintSizeSkippedCount)
         assertTrue(requestedKeys.isEmpty())
     }
 
@@ -191,6 +193,8 @@ class SimilarScreenshotScannerTest {
         assertEquals(listOf("similar-a", "similar-b"), requestedKeys)
         assertEquals(2, result.fingerprintCandidateCount)
         assertEquals(2, result.fingerprintSkippedCount)
+        assertEquals(0, result.fingerprintTimeSkippedCount)
+        assertEquals(2, result.fingerprintSizeSkippedCount)
         assertEquals(listOf(listOf("1", "2")), result.groups.map { group -> group.items.map { it.id }.sorted() })
     }
 
