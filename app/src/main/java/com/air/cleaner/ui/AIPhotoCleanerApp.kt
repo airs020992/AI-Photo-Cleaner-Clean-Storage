@@ -495,7 +495,7 @@ private fun MainAppShell(
                         postDeleteStatus = postDeleteStatus.takeIf {
                             postDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots
                         },
-                        emptyTitle = similarScreenshotReviewStatus.emptyTitle(),
+                        emptyTitle = similarScreenshotReviewStatus.emptyTitle(scanStatus),
                         emptyMessage = similarScreenshotReviewStatus.emptyMessage(scanStatus),
                         emptyActionLabel = similarScreenshotReviewStatus.emptyActionLabel(),
                         onEmptyAction = onRescanSimilarScreenshots,

@@ -36,6 +36,14 @@ internal fun SimilarScreenshotReviewStatus.emptyTitle(): String {
     }
 }
 
+internal fun SimilarScreenshotReviewStatus.emptyTitle(scanStatus: MediaScanStatus): String {
+    val screenshotCount = scanStatus.summary?.screenshotCount
+    if (this != SimilarScreenshotReviewStatus.FilteredCacheEmpty && screenshotCount == 0) {
+        return "No screenshots to compare"
+    }
+    return emptyTitle()
+}
+
 internal fun SimilarScreenshotReviewStatus.emptyMessage(): String {
     return when (this) {
         SimilarScreenshotReviewStatus.FilteredCacheEmpty -> {
@@ -69,6 +77,8 @@ internal fun SimilarScreenshotReviewStatus.emptyMessage(scanStatus: MediaScanSta
         SimilarScreenshotReviewStatus.Fresh -> {
             if (screenshotCount == null) {
                 emptyMessage()
+            } else if (screenshotCount == 0) {
+                "We found 0 screenshots in the current photo access scope.\n\nWhat to try: take a few screenshots of the same screen, or allow full photo access, then tap Rescan photos."
             } else {
                 "We checked $screenshotCount screenshots for near-identical layouts and tiny visual changes. No safe review groups passed the confidence threshold yet.\n\nWhat to try: take 2-3 screenshots of the same screen, then tap Rescan photos."
             }

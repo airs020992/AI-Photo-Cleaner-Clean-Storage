@@ -48,6 +48,20 @@ class SimilarScreenshotReviewStatusTest {
     }
 
     @Test
+    fun freshEmptyResultsExplainWhenNoScreenshotsAreInScope() {
+        val status = SimilarScreenshotReviewStatus.Fresh
+
+        assertEquals(
+            "No screenshots to compare",
+            status.emptyTitle(scanStatusWithScreenshots(0)),
+        )
+        assertEquals(
+            "We found 0 screenshots in the current photo access scope.\n\nWhat to try: take a few screenshots of the same screen, or allow full photo access, then tap Rescan photos.",
+            status.emptyMessage(scanStatusWithScreenshots(0)),
+        )
+    }
+
+    @Test
     fun filteredCacheEmptyKeepsStaleResultExplanationWithCurrentScope() {
         val status = SimilarScreenshotReviewStatus.FilteredCacheEmpty
 
