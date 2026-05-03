@@ -74,6 +74,7 @@ import com.air.cleaner.core.permissions.MediaPermissionState
 import com.air.cleaner.core.ui.theme.CleanerTheme
 import com.air.cleaner.data.media.AndroidMediaStoreRepository
 import com.air.cleaner.data.media.MediaScanSummary
+import com.air.cleaner.data.media.SharedPreferencesPerceptualFingerprintCache
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.dashboard.CleanupCategory
 import com.air.cleaner.feature.dashboard.CleanupPriority
@@ -136,7 +137,10 @@ fun AIPhotoCleanerApp() {
             }
 
             LaunchedEffect(context, permissionState.access, scanRefreshKey) {
-                val repository = AndroidMediaStoreRepository(context.contentResolver)
+                val repository = AndroidMediaStoreRepository(
+                    contentResolver = context.contentResolver,
+                    similarScreenshotFingerprintCache = SharedPreferencesPerceptualFingerprintCache(context),
+                )
                 scanStatus = MediaScanStatus(MediaScanPhase.CountingLibrary)
                 scanSummary = withContext(Dispatchers.IO) {
                     repository.scanSummary()

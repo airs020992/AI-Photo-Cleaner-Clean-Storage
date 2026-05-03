@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 
 class AndroidMediaStoreRepository(
     private val contentResolver: ContentResolver,
+    private val similarScreenshotFingerprintCache: PerceptualFingerprintCache = InMemoryPerceptualFingerprintCache(),
 ) : MediaRepository {
     override suspend fun scanSummary(): MediaScanSummary = withContext(Dispatchers.IO) {
         val accumulator = MediaScanSummaryAccumulator()
@@ -54,12 +55,14 @@ class AndroidMediaStoreRepository(
 
     override suspend fun scanSimilarScreenshotGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
         SimilarScreenshotScanner(
-            perceptualFingerprint = { contentKey ->
-                runCatching {
-                    contentResolver.openInputStream(Uri.parse(contentKey))?.use { inputStream ->
-                        ImageContentFingerprinter.averageHash(inputStream)
-                    }
-                }.getOrNull()
+            perceptualFingerprint = { candidate ->
+                similarScreenshotFingerprintCache.getOrPut(candidate.fingerprintCacheKey) {
+                    runCatching {
+                        contentResolver.openInputStream(Uri.parse(candidate.contentKey))?.use { inputStream ->
+                            ImageContentFingerprinter.averageHash(inputStream)
+                        }
+                    }.getOrNull()
+                }
             },
         ).findSimilarGroups(
             scanImageItems().map { itemWithPath ->
@@ -67,6 +70,7 @@ class AndroidMediaStoreRepository(
                     item = itemWithPath.item,
                     contentKey = itemWithPath.contentUri.toString(),
                     relativePath = itemWithPath.relativePath,
+                    cacheDateMillis = itemWithPath.dateModifiedMillis ?: itemWithPath.item.dateTakenMillis,
                 )
             },
         )
@@ -127,6 +131,7 @@ class AndroidMediaStoreRepository(
                         ),
                         relativePath = row.relativePath,
                         contentUri = contentUri,
+                        dateModifiedMillis = row.dateModifiedSeconds?.times(1_000L),
                     )
                 }
             }
@@ -189,5 +194,6 @@ class AndroidMediaStoreRepository(
         val item: MediaItem,
         val relativePath: String?,
         val contentUri: Uri,
+        val dateModifiedMillis: Long?,
     )
 }

@@ -7,10 +7,20 @@ data class SimilarScreenshotCandidate(
     val item: MediaItem,
     val contentKey: String,
     val relativePath: String?,
-)
+    val cacheDateMillis: Long = item.dateTakenMillis,
+) {
+    val fingerprintCacheKey: PerceptualFingerprintCacheKey
+        get() = PerceptualFingerprintCacheKey(
+            contentUri = contentKey,
+            sizeBytes = item.sizeBytes,
+            dateMillis = cacheDateMillis,
+            width = item.width,
+            height = item.height,
+        )
+}
 
 class SimilarScreenshotScanner(
-    private val perceptualFingerprint: (String) -> String?,
+    private val perceptualFingerprint: (SimilarScreenshotCandidate) -> String?,
     private val maxHashDistance: Int = DEFAULT_MAX_HASH_DISTANCE,
 ) {
     fun findSimilarGroups(candidates: List<SimilarScreenshotCandidate>): List<DuplicateGroup> {
@@ -24,7 +34,7 @@ class SimilarScreenshotScanner(
             .values
             .flatMap { bucket ->
                 val fingerprinted = bucket.mapNotNull { candidate ->
-                    perceptualFingerprint(candidate.contentKey)?.let { hash ->
+                    perceptualFingerprint(candidate)?.let { hash ->
                         FingerprintedScreenshot(candidate.item, hash)
                     }
                 }

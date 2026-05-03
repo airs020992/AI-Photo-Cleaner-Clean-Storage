@@ -10,8 +10,8 @@ class SimilarScreenshotScannerTest {
     @Test
     fun groupsScreenshotsWithNearbyPerceptualHashes() {
         val scanner = SimilarScreenshotScanner(
-            perceptualFingerprint = { key ->
-                when (key) {
+            perceptualFingerprint = { candidate ->
+                when (candidate.contentKey) {
                     "uri-a" -> "0000000000000000"
                     "uri-b" -> "0000000000000001"
                     else -> null
@@ -35,8 +35,8 @@ class SimilarScreenshotScannerTest {
     fun ignoresNonScreenshotImagesEvenWhenHashesAreClose() {
         val requestedKeys = mutableListOf<String>()
         val scanner = SimilarScreenshotScanner(
-            perceptualFingerprint = { key ->
-                requestedKeys += key
+            perceptualFingerprint = { candidate ->
+                requestedKeys += candidate.contentKey
                 "0000000000000000"
             },
         )
@@ -54,8 +54,8 @@ class SimilarScreenshotScannerTest {
     @Test
     fun keepsDistantScreenshotHashesInSeparateGroups() {
         val scanner = SimilarScreenshotScanner(
-            perceptualFingerprint = { key ->
-                when (key) {
+            perceptualFingerprint = { candidate ->
+                when (candidate.contentKey) {
                     "uri-a" -> "0000000000000000"
                     "uri-b" -> "ffffffffffffffff"
                     else -> null
@@ -77,8 +77,8 @@ class SimilarScreenshotScannerTest {
     fun doesNotCompareScreenshotsWithDifferentDimensions() {
         val requestedKeys = mutableListOf<String>()
         val scanner = SimilarScreenshotScanner(
-            perceptualFingerprint = { key ->
-                requestedKeys += key
+            perceptualFingerprint = { candidate ->
+                requestedKeys += candidate.contentKey
                 "0000000000000000"
             },
         )
@@ -93,11 +93,62 @@ class SimilarScreenshotScannerTest {
         assertTrue(requestedKeys.isEmpty())
     }
 
+    @Test
+    fun providesCandidateMetadataToFingerprintReader() {
+        val observedKeys = mutableListOf<PerceptualFingerprintCacheKey>()
+        val scanner = SimilarScreenshotScanner(
+            perceptualFingerprint = { candidate ->
+                observedKeys += candidate.fingerprintCacheKey
+                "0000000000000000"
+            },
+        )
+        val candidates = listOf(
+            candidate(
+                id = "1",
+                displayName = "Screenshot_1.png",
+                contentKey = "uri-a",
+                sizeBytes = 1_912_800L,
+                dateMillis = 1_000L,
+            ),
+            candidate(
+                id = "2",
+                displayName = "Screenshot_2.png",
+                contentKey = "uri-b",
+                sizeBytes = 1_912_759L,
+                dateMillis = 2_000L,
+            ),
+        )
+
+        scanner.findSimilarGroups(candidates)
+
+        assertEquals(
+            listOf(
+                PerceptualFingerprintCacheKey(
+                    contentUri = "uri-a",
+                    sizeBytes = 1_912_800L,
+                    dateMillis = 1_000L,
+                    width = 1440,
+                    height = 3120,
+                ),
+                PerceptualFingerprintCacheKey(
+                    contentUri = "uri-b",
+                    sizeBytes = 1_912_759L,
+                    dateMillis = 2_000L,
+                    width = 1440,
+                    height = 3120,
+                ),
+            ),
+            observedKeys,
+        )
+    }
+
     private fun candidate(
         id: String,
         displayName: String,
         contentKey: String,
         relativePath: String = "Pictures/Screenshots/",
+        sizeBytes: Long = 1_000_000L,
+        dateMillis: Long = id.toLong() * 1_000L,
         width: Int = 1440,
         height: Int = 3120,
     ): SimilarScreenshotCandidate {
@@ -105,8 +156,8 @@ class SimilarScreenshotScannerTest {
             item = MediaItem(
                 id = id,
                 displayName = displayName,
-                sizeBytes = 1_000_000L,
-                dateTakenMillis = id.toLong() * 1_000L,
+                sizeBytes = sizeBytes,
+                dateTakenMillis = dateMillis,
                 contentHash = null,
                 mediaType = MediaType.Image,
                 contentUri = contentKey,
@@ -115,6 +166,7 @@ class SimilarScreenshotScannerTest {
             ),
             contentKey = contentKey,
             relativePath = relativePath,
+            cacheDateMillis = dateMillis,
         )
     }
 }
