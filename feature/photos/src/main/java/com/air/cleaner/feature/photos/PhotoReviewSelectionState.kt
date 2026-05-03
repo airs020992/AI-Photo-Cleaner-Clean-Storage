@@ -20,6 +20,7 @@ data class PhotoReviewSelectionState(
 
     val selectedCount: Int = selectedIds.size
     val selectedBytes: Long = selectedItems.sumOf { it.sizeBytes }
+    val canContinue: Boolean = selectedCount > 0
 
     fun isSelectedForDeletion(itemId: String): Boolean {
         return itemId in selectedIds

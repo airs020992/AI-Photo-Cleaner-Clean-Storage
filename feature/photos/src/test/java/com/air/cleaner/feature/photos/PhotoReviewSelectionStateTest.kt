@@ -101,6 +101,22 @@ class PhotoReviewSelectionStateTest {
     }
 
     @Test
+    fun disablesContinueWhenNothingIsSelectedForDeletion() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("keep", 3_000L, 100L),
+                    mediaItem("delete", 2_000L, 200L),
+                ),
+            ),
+        )
+
+        val afterDeselect = state.toggle("delete")
+
+        assertFalse(afterDeselect.canContinue)
+    }
+
+    @Test
     fun canDeselectOneGroupWithoutChangingOtherGroups() {
         val state = PhotoReviewSelectionState.fromGroups(
             groups = listOf(

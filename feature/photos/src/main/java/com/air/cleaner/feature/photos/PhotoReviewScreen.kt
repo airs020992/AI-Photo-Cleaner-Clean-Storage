@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
@@ -64,80 +65,118 @@ fun PhotoReviewScreen(
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups, keepStrategy))
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "${selectionState.selectedCount} selected | ${formatBytes(selectionState.selectedBytes)} recoverable",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        postDeleteStatus?.let { status ->
-            PostDeleteStatusCard(status = status)
-        }
-        if (noticeTitle != null && noticeMessage != null) {
-            ReviewNoticeCard(
-                title = noticeTitle,
-                message = noticeMessage,
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .padding(bottom = 116.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
             )
-        }
-
-        if (groups.isEmpty()) {
-            EmptyDuplicateReviewCard(
-                title = emptyTitle,
-                message = emptyMessage,
-                actionLabel = emptyActionLabel,
-                onAction = onEmptyAction,
+            Text(
+                text = "${selectionState.selectedCount} selected | ${formatBytes(selectionState.selectedBytes)} recoverable",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
-            groups.forEachIndexed { index, group ->
-                DuplicateGroupCard(
-                    groupIndex = index + 1,
-                    group = group,
-                    selectionState = selectionState,
-                    onToggle = { itemId ->
-                        selectionState = selectionState.toggle(itemId)
-                    },
-                    onDeselectGroup = {
-                        selectionState = selectionState.deselectGroup(group.key)
-                    },
-                    onResetGroup = {
-                        selectionState = selectionState.resetGroup(group.key, keepStrategy)
-                    },
-                    itemMatchLabel = itemMatchLabel,
-                    matchExplanation = groupMatchExplanation?.invoke(group),
-                    keepStrategy = keepStrategy,
+            postDeleteStatus?.let { status ->
+                PostDeleteStatusCard(status = status)
+            }
+            if (noticeTitle != null && noticeMessage != null) {
+                ReviewNoticeCard(
+                    title = noticeTitle,
+                    message = noticeMessage,
                 )
             }
+
+            if (groups.isEmpty()) {
+                EmptyDuplicateReviewCard(
+                    title = emptyTitle,
+                    message = emptyMessage,
+                    actionLabel = emptyActionLabel,
+                    onAction = onEmptyAction,
+                )
+            } else {
+                groups.forEachIndexed { index, group ->
+                    DuplicateGroupCard(
+                        groupIndex = index + 1,
+                        group = group,
+                        selectionState = selectionState,
+                        onToggle = { itemId ->
+                            selectionState = selectionState.toggle(itemId)
+                        },
+                        onDeselectGroup = {
+                            selectionState = selectionState.deselectGroup(group.key)
+                        },
+                        onResetGroup = {
+                            selectionState = selectionState.resetGroup(group.key, keepStrategy)
+                        },
+                        itemMatchLabel = itemMatchLabel,
+                        matchExplanation = groupMatchExplanation?.invoke(group),
+                        keepStrategy = keepStrategy,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        PhotoReviewBottomActionBar(
+            selectionState = selectionState,
+            onBack = onBack,
+            onContinue = { onContinue(selectionState) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+@Composable
+private fun PhotoReviewBottomActionBar(
+    selectionState: PhotoReviewSelectionState,
+    onBack: () -> Unit,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Button(
-                modifier = Modifier.weight(1f),
-                onClick = onBack,
+            Text(
+                text = "${selectionState.selectedCount} selected | ${formatBytes(selectionState.selectedBytes)} recoverable",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("Back")
-            }
-            Button(
-                modifier = Modifier.weight(1f),
-                enabled = selectionState.selectedCount > 0,
-                onClick = { onContinue(selectionState) },
-            ) {
-                Text("Continue")
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = onBack,
+                ) {
+                    Text("Back")
+                }
+                Button(
+                    modifier = Modifier.weight(1f),
+                    enabled = selectionState.canContinue,
+                    onClick = onContinue,
+                ) {
+                    Text("Continue")
+                }
             }
         }
     }
