@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -111,10 +112,12 @@ fun AIPhotoCleanerApp() {
         }
 
         if (permissionState.canScanAnyMedia) {
+            val telemetry = remember { LogcatCleanerTelemetry() }
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotReviewStatus by remember { mutableStateOf(SimilarScreenshotReviewStatus.Loading) }
+            var similarScreenshotScanStartedAtMillis by remember { mutableStateOf<Long?>(null) }
             var scanStatus by remember { mutableStateOf(MediaScanStatus()) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
@@ -129,6 +132,14 @@ fun AIPhotoCleanerApp() {
                 contract = ActivityResultContracts.StartIntentSenderForResult(),
             ) { result ->
                 pendingDeleteSummary?.let { summary ->
+                    if (pendingDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots) {
+                        telemetry.track(
+                            SimilarScreenshotTelemetry.systemDeleteResult(
+                                confirmed = result.resultCode == Activity.RESULT_OK,
+                                summary = summary,
+                            ),
+                        )
+                    }
                     val deletionResult = PhotoDeletionResult.fromSystemResult(
                         summary = summary,
                         systemConfirmed = result.resultCode == Activity.RESULT_OK,
@@ -178,11 +189,21 @@ fun AIPhotoCleanerApp() {
                     phase = MediaScanPhase.FindingSimilarScreenshots,
                     summary = scanSummary,
                 )
+                similarScreenshotScanStartedAtMillis = SystemClock.elapsedRealtime()
                 val freshSimilarScreenshotGroups = withContext(Dispatchers.IO) {
                     repository.scanSimilarScreenshotGroups()
                 }
                 similarScreenshotGroups = freshSimilarScreenshotGroups
                 similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh
+                telemetry.track(
+                    SimilarScreenshotTelemetry.scanCompleted(
+                        elapsedMillis = SystemClock.elapsedRealtime() -
+                            (similarScreenshotScanStartedAtMillis ?: SystemClock.elapsedRealtime()),
+                        scanSummary = scanSummary,
+                        groups = freshSimilarScreenshotGroups,
+                        status = SimilarScreenshotReviewStatus.Fresh,
+                    ),
+                )
                 withContext(Dispatchers.IO) {
                     repository.saveSimilarScreenshotGroups(freshSimilarScreenshotGroups)
                 }
@@ -237,6 +258,7 @@ fun AIPhotoCleanerApp() {
                 duplicatePhotoGroups = duplicatePhotoGroups,
                 similarScreenshotGroups = similarScreenshotGroups,
                 similarScreenshotReviewStatus = similarScreenshotReviewStatus,
+                telemetry = telemetry,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = {
                     navigationState = navigationState.openDuplicatePhotos(
@@ -244,11 +266,23 @@ fun AIPhotoCleanerApp() {
                     )
                 },
                 onOpenSimilarScreenshots = {
+                    telemetry.track(
+                        SimilarScreenshotTelemetry.entryTapped(
+                            groups = similarScreenshotGroups,
+                            status = similarScreenshotReviewStatus,
+                        ),
+                    )
                     navigationState = navigationState.openSimilarScreenshots(
                         scanComplete = similarScreenshotGroups != null,
                     )
                 },
                 onRescanSimilarScreenshots = {
+                    telemetry.track(
+                        SimilarScreenshotTelemetry.rescanTapped(
+                            status = similarScreenshotReviewStatus,
+                            currentGroupCount = similarScreenshotGroups.orEmpty().size,
+                        ),
+                    )
                     similarScreenshotGroups = null
                     similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
                     scanRefreshKey += 1
@@ -297,6 +331,7 @@ private fun MainAppShell(
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
     similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
+    telemetry: CleanerTelemetry,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
@@ -361,12 +396,20 @@ private fun MainAppShell(
                         groups = similarScreenshotGroups,
                         onBack = onBackToPhotos,
                         onContinue = { selectionState ->
-                            onRequestDeleteConfirmation(
-                                PhotoDeletionSummary.fromSimilarScreenshotSelection(
-                                    groups = similarScreenshotGroups,
-                                    selectionState = selectionState,
-                                    keepStrategy = PhotoReviewKeepStrategy.Newest,
+                            val summary = PhotoDeletionSummary.fromSimilarScreenshotSelection(
+                                groups = similarScreenshotGroups,
+                                selectionState = selectionState,
+                                keepStrategy = PhotoReviewKeepStrategy.Newest,
+                            )
+                            telemetry.track(
+                                SimilarScreenshotTelemetry.continueTapped(
+                                    summary = summary,
+                                    totalGroups = similarScreenshotGroups.size,
+                                    priorityGroups = summary.priorityGroupCount,
                                 ),
+                            )
+                            onRequestDeleteConfirmation(
+                                summary,
                                 PhotoDeleteReviewContext.SimilarScreenshots,
                             )
                         },
@@ -1011,6 +1054,7 @@ private fun MainAppShellPreview() {
             duplicatePhotoGroups = emptyList(),
             similarScreenshotGroups = emptyList(),
             similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh,
+            telemetry = NoOpCleanerTelemetry,
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onOpenSimilarScreenshots = {},
