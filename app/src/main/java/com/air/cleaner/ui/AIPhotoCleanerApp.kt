@@ -39,6 +39,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -257,19 +258,23 @@ private fun MainAppShell(
                 )
             }
             AppScreen.SimilarScreenshotReview -> Box(modifier = Modifier.padding(padding)) {
-                PhotoReviewScreen(
-                    title = "Similar screenshots",
-                    groups = similarScreenshotGroups.orEmpty(),
-                    onBack = onBackToPhotos,
-                    onContinue = { selectionState ->
-                        onRequestDeleteConfirmation(
-                            PhotoDeletionSummary.fromItems(selectionState.selectedItems),
-                        )
-                    },
-                    emptyTitle = "No similar screenshots found",
-                    emptyMessage = "Small visual differences are grouped only when confidence is high enough. Nothing is deleted automatically.",
-                    itemMatchLabel = "Similar screenshot",
-                )
+                if (similarScreenshotGroups == null) {
+                    SimilarScreenshotsLoadingScreen(onBack = onBackToPhotos)
+                } else {
+                    PhotoReviewScreen(
+                        title = "Similar screenshots",
+                        groups = similarScreenshotGroups,
+                        onBack = onBackToPhotos,
+                        onContinue = { selectionState ->
+                            onRequestDeleteConfirmation(
+                                PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                            )
+                        },
+                        emptyTitle = "No similar screenshots found",
+                        emptyMessage = "Small visual differences are grouped only when confidence is high enough. Nothing is deleted automatically.",
+                        itemMatchLabel = "Similar screenshot",
+                    )
+                }
             }
         }
         pendingDeleteSummary?.let { summary ->
@@ -284,6 +289,60 @@ private fun MainAppShell(
                 result = result,
                 onDone = onDismissDeleteResult,
             )
+        }
+    }
+}
+
+@Composable
+private fun SimilarScreenshotsLoadingScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Similar screenshots",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = "Scanning media library",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                Text(
+                    text = "Looking for near-identical screenshots",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "First scan can take up to a minute on large libraries. Results will appear here automatically.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onBack,
+        ) {
+            Text("Back")
         }
     }
 }
@@ -353,7 +412,7 @@ private fun CleanTabScreen(
                 metric = category.recoverableLabel,
                 onClick = when (category.id) {
                     "duplicate_photos" -> onOpenDuplicatePhotos.takeIf { duplicatePhotoGroups != null }
-                    "similar_photos" -> onOpenSimilarScreenshots.takeIf { similarScreenshotGroups != null }
+                    "similar_photos" -> onOpenSimilarScreenshots
                     else -> null
                 },
             )
@@ -386,7 +445,7 @@ private fun PhotosTabScreen(
             title = "Similar photos",
             subtitle = "Near-identical screenshots grouped for manual review",
             metric = similarScreenshotGroups.toDuplicateMetricLabel(),
-            onClick = onOpenSimilarScreenshots.takeIf { similarScreenshotGroups != null },
+            onClick = onOpenSimilarScreenshots,
         )
         MetricRow(
             icon = Icons.Rounded.Shield,

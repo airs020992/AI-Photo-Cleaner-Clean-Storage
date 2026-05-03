@@ -36,7 +36,6 @@ data class AppNavigationState(
     }
 
     fun openSimilarScreenshots(scanComplete: Boolean = true): AppNavigationState {
-        if (!scanComplete) return this
         return copy(
             selectedTab = AppTab.Photos,
             currentScreen = AppScreen.SimilarScreenshotReview,

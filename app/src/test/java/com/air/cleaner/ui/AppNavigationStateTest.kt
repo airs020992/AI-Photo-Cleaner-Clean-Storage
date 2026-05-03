@@ -33,12 +33,13 @@ class AppNavigationStateTest {
     }
 
     @Test
-    fun similarScreenshotActionDoesNotOpenReviewBeforeScanCompletes() {
+    fun similarScreenshotActionOpensReviewWhileScanIsStillRunning() {
         val state = AppNavigationState(selectedTab = AppTab.Photos, currentScreen = AppScreen.Tab(AppTab.Photos))
 
         val next = state.openSimilarScreenshots(scanComplete = false)
 
-        assertEquals(state, next)
+        assertEquals(AppTab.Photos, next.selectedTab)
+        assertEquals(AppScreen.SimilarScreenshotReview, next.currentScreen)
     }
 
     @Test
