@@ -693,6 +693,7 @@ private fun PhotosTabScreen(
     val similarPhotosEntry = similarPhotosEntryState(
         groups = similarScreenshotGroups,
         reviewStatus = similarScreenshotReviewStatus,
+        screenshotCount = scanSummary?.screenshotCount,
         formatBytes = ::formatBytes,
     )
     ScreenColumn(contentPadding = contentPadding) {
