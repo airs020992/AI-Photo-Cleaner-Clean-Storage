@@ -43,6 +43,21 @@ class PhotoDeleteReconciliationTest {
     }
 
     @Test
+    fun prioritizesMediaStoreExistenceWhenAvailable() {
+        val reconciliation = PhotoDeleteReconciliation.from(
+            summary = deleteSummary("content://images/a", "content://images/b", bytes = 2_000L),
+            result = PhotoDeletionResult(PhotoDeletionStatus.Deleted, itemCount = 2, bytes = 2_000L),
+            currentGroups = emptyList(),
+            stillExistingContentUris = listOf("content://images/b"),
+        )
+
+        assertEquals(1, reconciliation?.resolvedItemCount)
+        assertEquals(1, reconciliation?.stillExistsCount)
+        assertEquals(listOf("content://images/b"), reconciliation?.stillExistingUris)
+        assertEquals(0, reconciliation?.stillNeedsReviewCount)
+    }
+
+    @Test
     fun ignoresCanceledOrBlockedResults() {
         assertNull(
             PhotoDeleteReconciliation.from(

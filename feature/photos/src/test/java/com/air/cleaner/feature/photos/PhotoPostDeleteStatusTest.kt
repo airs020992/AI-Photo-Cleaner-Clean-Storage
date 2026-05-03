@@ -102,6 +102,28 @@ class PhotoPostDeleteStatusTest {
         assertEquals(0L, status?.remainingRecoverableBytes)
     }
 
+    @Test
+    fun summarizesReconciliationWhenMediaStoreStillContainsSelectedPhotos() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 2,
+                requestedBytes = 2_000L,
+                resolvedItemCount = 1,
+                stillExistsCount = 1,
+                stillExistingUris = listOf("content://images/b"),
+                stillNeedsReviewCount = 0,
+                stillNeedsReviewUris = emptyList(),
+                remainingGroupCount = 0,
+                remainingRecoverableBytes = 0L,
+            ),
+        )
+
+        assertEquals("1 photo deleted", status?.title)
+        assertEquals("1 selected photo still exists in your library", status?.message)
+        assertEquals(0, status?.remainingGroupCount)
+        assertEquals(0L, status?.remainingRecoverableBytes)
+    }
+
     private fun duplicateGroup(vararg ids: String): DuplicateGroup {
         return DuplicateGroup(
             key = ids.joinToString(),

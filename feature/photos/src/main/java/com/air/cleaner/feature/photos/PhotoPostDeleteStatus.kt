@@ -16,11 +16,13 @@ data class PhotoPostDeleteStatus(
 
             return PhotoPostDeleteStatus(
                 title = when {
+                    reconciliation.stillExistsCount > 0 -> "${reconciliation.resolvedItemCount} ${photoNoun(reconciliation.resolvedItemCount)} deleted"
                     reconciliation.remainingGroupCount == 0 -> "All duplicate photos cleared"
                     reconciliation.stillNeedsReviewCount > 0 -> "${reconciliation.resolvedItemCount} ${photoNoun(reconciliation.resolvedItemCount)} resolved"
                     else -> "${reconciliation.resolvedItemCount} ${photoNoun(reconciliation.resolvedItemCount)} removed"
                 },
                 message = when {
+                    reconciliation.stillExistsCount > 0 -> "${reconciliation.stillExistsCount} selected ${photoNoun(reconciliation.stillExistsCount)} still ${if (reconciliation.stillExistsCount == 1) "exists" else "exist"} in your library"
                     reconciliation.remainingGroupCount == 0 -> "${reconciliation.resolvedItemCount} photos no longer appear in duplicate review"
                     reconciliation.stillNeedsReviewCount > 0 -> "${reconciliation.stillNeedsReviewCount} selected ${if (reconciliation.stillNeedsReviewCount == 1) "photo still appears" else "photos still appear"} in duplicate review"
                     else -> "${reconciliation.remainingGroupCount} duplicate ${if (reconciliation.remainingGroupCount == 1) "group" else "groups"} still ${if (reconciliation.remainingGroupCount == 1) "needs" else "need"} review"

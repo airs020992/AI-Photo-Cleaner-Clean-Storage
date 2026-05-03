@@ -55,6 +55,24 @@ class AndroidMediaStoreRepository(
         )
     }
 
+    override suspend fun contentUrisStillPresent(contentUris: List<String>): List<String> = withContext(Dispatchers.IO) {
+        ContentUriPresenceVerifier(
+            exists = { contentUri -> contentUriExists(contentUri) },
+        ).stillPresent(contentUris)
+    }
+
+    private fun contentUriExists(contentUri: String): Boolean {
+        return runCatching {
+            contentResolver.query(
+                Uri.parse(contentUri),
+                arrayOf(MediaStore.MediaColumns._ID),
+                null,
+                null,
+                null,
+            )?.use { cursor -> cursor.moveToFirst() } == true
+        }.getOrDefault(false)
+    }
+
     private fun scanItems(
         uri: Uri,
         mediaType: MediaType,

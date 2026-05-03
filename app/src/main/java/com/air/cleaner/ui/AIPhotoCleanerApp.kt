@@ -111,6 +111,7 @@ fun AIPhotoCleanerApp() {
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var lastDeletedResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var lastDeletedSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
+            var lastStillExistingDeletedUris by remember { mutableStateOf<List<String>?>(null) }
             var scanRefreshKey by remember { mutableStateOf(0) }
             val deleteLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartIntentSenderForResult(),
@@ -124,6 +125,7 @@ fun AIPhotoCleanerApp() {
                     if (deletionResult.shouldRefreshScan) {
                         lastDeletedResult = deletionResult
                         lastDeletedSummary = summary
+                        lastStillExistingDeletedUris = null
                         scanRefreshKey += 1
                     }
                 }
@@ -133,10 +135,18 @@ fun AIPhotoCleanerApp() {
             LaunchedEffect(context, permissionState.access, scanRefreshKey) {
                 val scanResult = withContext(Dispatchers.IO) {
                     val repository = AndroidMediaStoreRepository(context.contentResolver)
-                    repository.scanSummary() to repository.scanDuplicatePhotoGroups()
+                    val summary = repository.scanSummary()
+                    val duplicateGroups = repository.scanDuplicatePhotoGroups()
+                    val stillExistingDeletedUris = lastDeletedSummary
+                        ?.takeIf { lastDeletedResult?.shouldRefreshScan == true }
+                        ?.let { deleteSummary ->
+                            repository.contentUrisStillPresent(deleteSummary.contentUris)
+                        }
+                    Triple(summary, duplicateGroups, stillExistingDeletedUris)
                 }
                 scanSummary = scanResult.first
                 duplicatePhotoGroups = scanResult.second
+                lastStillExistingDeletedUris = scanResult.third
             }
 
             MainAppShell(
@@ -153,6 +163,7 @@ fun AIPhotoCleanerApp() {
                         summary = lastDeletedSummary,
                         result = lastDeletedResult,
                         currentGroups = duplicatePhotoGroups.orEmpty(),
+                        stillExistingContentUris = lastStillExistingDeletedUris,
                     ),
                 ),
                 onRequestDeleteConfirmation = { pendingDeleteSummary = it },
