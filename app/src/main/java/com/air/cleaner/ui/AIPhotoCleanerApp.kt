@@ -95,6 +95,7 @@ import com.air.cleaner.feature.photos.PhotoReviewKeepStrategy
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import com.air.cleaner.feature.photos.similarScreenshotMatchExplanation
 import com.air.cleaner.feature.photos.similarScreenshotTrustSummary
+import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
@@ -117,9 +118,19 @@ fun AIPhotoCleanerApp() {
             var analyticsEnabled by remember {
                 mutableStateOf(context.cleanerPreferences().analyticsEnabled())
             }
+            val analyticsPrivacyController = remember {
+                FirebaseAnalyticsPrivacyController(
+                    FirebaseAnalyticsCollectionAdapter(FirebaseAnalytics.getInstance(context)),
+                )
+            }
             val telemetry = remember {
                 ConsentAwareCleanerTelemetry(
-                    delegate = SafeCleanerTelemetry(LogcatCleanerTelemetry()),
+                    delegate = SafeCleanerTelemetry(
+                        CompositeCleanerTelemetry(
+                            FirebaseCleanerTelemetry(FirebaseAnalytics.getInstance(context)),
+                            LogcatCleanerTelemetry(),
+                        ),
+                    ),
                     analyticsEnabled = { analyticsEnabled },
                 )
             }
@@ -324,6 +335,7 @@ fun AIPhotoCleanerApp() {
                 onDismissDeleteResult = { deleteResult = null },
                 onAnalyticsEnabledChange = { enabled ->
                     analyticsEnabled = enabled
+                    analyticsPrivacyController.setProductAnalyticsEnabled(enabled)
                     context.cleanerPreferences()
                         .edit()
                         .putBoolean(PREF_ANALYTICS_ENABLED, enabled)
@@ -1132,13 +1144,4 @@ private fun MainAppShellPreview() {
             onAnalyticsEnabledChange = {},
         )
     }
-}
-
-private const val CLEANER_PREFS = "ai_photo_cleaner"
-private const val PREF_ANALYTICS_ENABLED = "analytics_enabled"
-
-private fun Context.cleanerPreferences() = getSharedPreferences(CLEANER_PREFS, Context.MODE_PRIVATE)
-
-private fun android.content.SharedPreferences.analyticsEnabled(): Boolean {
-    return getBoolean(PREF_ANALYTICS_ENABLED, false)
 }

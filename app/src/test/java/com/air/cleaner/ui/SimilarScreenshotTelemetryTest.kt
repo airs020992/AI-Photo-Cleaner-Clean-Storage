@@ -113,6 +113,22 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun compositeTelemetryForwardsToEveryDelegate() {
+        val firstTelemetry = RecordingCleanerTelemetry()
+        val secondTelemetry = RecordingCleanerTelemetry()
+        val telemetry = CompositeCleanerTelemetry(firstTelemetry, secondTelemetry)
+        val event = CleanerTelemetryEvent(
+            name = "similar_screenshots_entry_tapped",
+            properties = mapOf("group_count" to 2),
+        )
+
+        telemetry.track(event)
+
+        assertEquals(listOf(event), firstTelemetry.events)
+        assertEquals(listOf(event), secondTelemetry.events)
+    }
+
+    @Test
     fun scanCompletedEventCapturesLatencyAndResultQuality() {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,

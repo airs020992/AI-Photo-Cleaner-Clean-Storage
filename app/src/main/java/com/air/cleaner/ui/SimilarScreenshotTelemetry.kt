@@ -1,9 +1,11 @@
 package com.air.cleaner.ui
 
 import android.util.Log
+import android.os.Bundle
 import com.air.cleaner.data.media.MediaScanSummary
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
+import com.google.firebase.analytics.FirebaseAnalytics
 
 internal data class CleanerTelemetryEvent(
     val name: String,
@@ -45,6 +47,37 @@ internal class SafeCleanerTelemetry(
 internal class LogcatCleanerTelemetry : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
         Log.d("AIPhotoCleaner", "${event.name} ${event.properties}")
+    }
+}
+
+internal class FirebaseCleanerTelemetry(
+    private val firebaseAnalytics: FirebaseAnalytics,
+) : CleanerTelemetry {
+    override fun track(event: CleanerTelemetryEvent) {
+        firebaseAnalytics.logEvent(event.name, event.properties.toFirebaseBundle())
+    }
+}
+
+internal class CompositeCleanerTelemetry(
+    private vararg val delegates: CleanerTelemetry,
+) : CleanerTelemetry {
+    override fun track(event: CleanerTelemetryEvent) {
+        delegates.forEach { delegate -> delegate.track(event) }
+    }
+}
+
+private fun Map<String, Any>.toFirebaseBundle(): Bundle {
+    return Bundle().apply {
+        forEach { (key, value) ->
+            when (value) {
+                is Boolean -> putBoolean(key, value)
+                is Double -> putDouble(key, value)
+                is Float -> putDouble(key, value.toDouble())
+                is Int -> putLong(key, value.toLong())
+                is Long -> putLong(key, value)
+                is String -> putString(key, value)
+            }
+        }
     }
 }
 
