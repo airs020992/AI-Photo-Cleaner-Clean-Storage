@@ -78,7 +78,9 @@ class AndroidMediaStoreRepository(
     }
 
     override suspend fun cachedSimilarScreenshotGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
-        similarScreenshotResultCache.load()
+        ContentUriPresenceVerifier(
+            exists = { contentUri -> contentUriExists(contentUri) },
+        ).stillPresentGroups(similarScreenshotResultCache.load())
     }
 
     override suspend fun saveSimilarScreenshotGroups(groups: List<DuplicateGroup>) = withContext(Dispatchers.IO) {
