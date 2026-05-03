@@ -22,7 +22,7 @@ internal fun similarPhotosEntryState(
     }
     val subtitle = when {
         groups == null && screenshotCount != null ->
-            "Checking $screenshotCount screenshots for near-identical captures"
+            "Tap to watch live scan progress across $screenshotCount screenshots"
         groups == null -> "Checking screenshots for near-identical captures"
         groups.isNotEmpty() && reviewStatus == SimilarScreenshotReviewStatus.CachedRefreshing ->
             "Saved results ready; refreshing in background"

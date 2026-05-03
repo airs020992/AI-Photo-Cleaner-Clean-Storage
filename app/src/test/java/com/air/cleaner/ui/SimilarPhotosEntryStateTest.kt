@@ -30,7 +30,7 @@ class SimilarPhotosEntryStateTest {
         )
 
         assertEquals("37 screenshots", state.metric)
-        assertEquals("Checking 37 screenshots for near-identical captures", state.subtitle)
+        assertEquals("Tap to watch live scan progress across 37 screenshots", state.subtitle)
     }
 
     @Test

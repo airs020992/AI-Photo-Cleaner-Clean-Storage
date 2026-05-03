@@ -42,6 +42,26 @@ class MediaScanStatusTest {
     }
 
     @Test
+    fun similarLoadingCopySetsExpectationForLargeScreenshotLibraries() {
+        val status = MediaScanStatus(
+            phase = MediaScanPhase.FindingSimilarScreenshots,
+            summary = MediaScanSummary(
+                imageCount = 300,
+                videoCount = 0,
+                imageBytes = 100L,
+                videoBytes = 0L,
+                screenshotCount = 119,
+                screenshotBytes = 30L,
+            ),
+        )
+
+        assertEquals(
+            "Large screenshot library. This can take a few seconds; keep this screen open and groups will appear automatically.",
+            status.similarLoadingExpectationLabel(),
+        )
+    }
+
+    @Test
     fun similarLoadingProgressShowsFinalizingStage() {
         val status = MediaScanStatus(MediaScanPhase.FindingDuplicatePhotos)
 

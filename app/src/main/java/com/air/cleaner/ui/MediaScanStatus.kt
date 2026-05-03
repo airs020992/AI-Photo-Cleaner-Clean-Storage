@@ -64,3 +64,17 @@ internal fun MediaScanStatus.similarLoadingMessage(): String {
         MediaScanPhase.Complete -> "Results are ready."
     }
 }
+
+internal fun MediaScanStatus.similarLoadingExpectationLabel(): String {
+    val screenshotCount = summary?.screenshotCount
+    return when {
+        phase != MediaScanPhase.FindingSimilarScreenshots ->
+            "Scan progress updates automatically."
+        screenshotCount == null ->
+            "Counting scan scope before visual comparison starts."
+        screenshotCount >= 100 ->
+            "Large screenshot library. This can take a few seconds; keep this screen open and groups will appear automatically."
+        else ->
+            "This usually finishes quickly; groups will appear automatically."
+    }
+}

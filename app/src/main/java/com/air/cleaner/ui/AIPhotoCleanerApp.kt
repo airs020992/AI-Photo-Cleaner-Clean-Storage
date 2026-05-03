@@ -607,6 +607,11 @@ private fun SimilarScreenshotsLoadingScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
+                    text = scanStatus.similarLoadingExpectationLabel(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
                     text = "High-confidence groups appear automatically. We never delete anything from scan results.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
