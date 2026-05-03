@@ -18,6 +18,7 @@ internal data class AnalyticsDiagnosticsSummary(
     val latestEventLabel: String,
     val similarFunnelProgressLabel: String,
     val similarFunnelNextStepLabel: String,
+    val similarScanInsightLabels: List<String>,
 )
 
 internal data class AnalyticsDiagnosticsShareContent(
@@ -193,7 +194,7 @@ internal class CompositeCleanerTelemetry(
 }
 
 internal class AnalyticsDiagnosticsTelemetry(
-    private val maxEvents: Int = 5,
+    private val maxEvents: Int = 12,
     private val onEventsChanged: (List<CleanerTelemetryEvent>) -> Unit,
 ) : CleanerTelemetry {
     private val recentEvents = ArrayDeque<CleanerTelemetryEvent>()
@@ -220,6 +221,7 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsSummary(): Analyt
         latestEventLabel = firstOrNull()?.let { "Last local event: ${it.name}" } ?: "Last local event: none",
         similarFunnelProgressLabel = "Similar photos funnel: $completedSteps/${similarScreenshotDiagnosticsFunnel.size}",
         similarFunnelNextStepLabel = nextActionLabel,
+        similarScanInsightLabels = toSimilarScreenshotScanInsightLabels(),
     )
 }
 
@@ -237,6 +239,7 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsReport(analyticsE
         add("Product analytics: ${if (analyticsEnabled) "enabled" else "disabled"}")
         add(summary.similarFunnelProgressLabel)
         add(summary.similarFunnelNextStepLabel)
+        addAll(summary.similarScanInsightLabels)
         add(summary.latestEventLabel)
         add("Recent events:")
         addAll(recentEventLines)
@@ -295,6 +298,37 @@ private val similarScreenshotDiagnosticsFunnel = listOf(
 
 private fun Map<String, Any>.toStableDiagnosticsLabel(): String {
     return entries.sortedBy { it.key }.joinToString(separator = ", ") { (key, value) -> "$key=$value" }
+}
+
+private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): List<String> {
+    val scanCompleted = firstOrNull { it.name == "similar_screenshots_scan_completed" }
+        ?: return listOf("Similar photos scan: no scan completed event yet.")
+    val screenshotCount = scanCompleted.properties["screenshot_count"].asLongOrZero()
+    val groupCount = scanCompleted.properties["group_count"].asLongOrZero()
+    val emptyResult = scanCompleted.properties["empty_result"] as? Boolean ?: false
+    val elapsedMillis = scanCompleted.properties["elapsed_ms"].asLongOrZero()
+    val diagnosis = when {
+        emptyResult && screenshotCount == 0L ->
+            "Diagnosis: no screenshots were visible to the scan. Next: verify Photos permission and that screenshots are present in the media library."
+        emptyResult ->
+            "Diagnosis: screenshots were scanned, but no similar groups matched. Next: test with 2-3 near-duplicate screenshots of the same screen or tune the matching threshold."
+        else ->
+            "Diagnosis: similar groups were found. Next: review selection quality and deletion confirmation."
+    }
+    return listOf(
+        "Similar photos scan: screenshots=$screenshotCount, groups=$groupCount, empty=$emptyResult, elapsed_ms=$elapsedMillis.",
+        diagnosis,
+    )
+}
+
+private fun Any?.asLongOrZero(): Long {
+    return when (this) {
+        is Long -> this
+        is Int -> toLong()
+        is Short -> toLong()
+        is Byte -> toLong()
+        else -> 0L
+    }
 }
 
 private fun Map<String, Any>.toFirebaseBundle(): Bundle {

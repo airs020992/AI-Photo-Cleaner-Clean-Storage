@@ -57,6 +57,20 @@ class AnalyticsDiagnosticsTelemetryTest {
     }
 
     @Test
+    fun defaultRecorderKeepsEnoughEventsForFullSimilarPhotosFunnel() {
+        val snapshots = mutableListOf<List<CleanerTelemetryEvent>>()
+        val telemetry = AnalyticsDiagnosticsTelemetry(
+            onEventsChanged = { snapshots += it },
+        )
+
+        (1..8).forEach { index ->
+            telemetry.track(CleanerTelemetryEvent("similar_step_$index", mapOf("index" to index)))
+        }
+
+        assertEquals(8, snapshots.last().size)
+    }
+
+    @Test
     fun diagnosticsSummaryShowsSimilarPhotosFunnelProgressAndNextAction() {
         val events = listOf(
             CleanerTelemetryEvent("similar_screenshots_delete_requested", mapOf("selected_count" to 3L)),
@@ -106,6 +120,7 @@ class AnalyticsDiagnosticsTelemetryTest {
             Product analytics: enabled
             Similar photos funnel: 2/8
             Next: closed loop captured.
+            Similar photos scan: no scan completed event yet.
             Last local event: similar_screenshots_post_delete_action
             Recent events:
             1. similar_screenshots_post_delete_action | action=review_priority_groups, remaining_groups=4
@@ -134,11 +149,81 @@ class AnalyticsDiagnosticsTelemetryTest {
             Product analytics: disabled
             Similar photos funnel: 1/8
             Next: wait for the scan to finish.
+            Similar photos scan: no scan completed event yet.
             Last local event: similar_screenshots_entry_tapped
             Recent events:
             1. similar_screenshots_entry_tapped | groups_loaded=false
             """.trimIndent(),
             shareContent.text,
+        )
+    }
+
+    @Test
+    fun diagnosticsReportExplainsEmptyResultWithScreenshotsAvailable() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "screenshot_count" to 6L,
+                    "group_count" to 0L,
+                    "empty_result" to true,
+                    "elapsed_ms" to 1_240L,
+                ),
+            ),
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_entry_tapped",
+                properties = mapOf("groups_loaded" to false),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = false)
+
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: disabled
+            Similar photos funnel: 2/8
+            Next: review the similar photo groups.
+            Similar photos scan: screenshots=6, groups=0, empty=true, elapsed_ms=1240.
+            Diagnosis: screenshots were scanned, but no similar groups matched. Next: test with 2-3 near-duplicate screenshots of the same screen or tune the matching threshold.
+            Last local event: similar_screenshots_scan_completed
+            Recent events:
+            1. similar_screenshots_scan_completed | elapsed_ms=1240, empty_result=true, group_count=0, screenshot_count=6
+            2. similar_screenshots_entry_tapped | groups_loaded=false
+            """.trimIndent(),
+            report,
+        )
+    }
+
+    @Test
+    fun diagnosticsReportExplainsEmptyResultWithNoScreenshotsVisible() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "screenshot_count" to 0L,
+                    "group_count" to 0L,
+                    "empty_result" to true,
+                    "elapsed_ms" to 800L,
+                ),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = true)
+
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: enabled
+            Similar photos funnel: 1/8
+            Next: review the similar photo groups.
+            Similar photos scan: screenshots=0, groups=0, empty=true, elapsed_ms=800.
+            Diagnosis: no screenshots were visible to the scan. Next: verify Photos permission and that screenshots are present in the media library.
+            Last local event: similar_screenshots_scan_completed
+            Recent events:
+            1. similar_screenshots_scan_completed | elapsed_ms=800, empty_result=true, group_count=0, screenshot_count=0
+            """.trimIndent(),
+            report,
         )
     }
 }
