@@ -151,6 +151,37 @@ class PhotoPostDeleteStatusTest {
         )
     }
 
+    @Test
+    fun surfacesRemainingPriorityGroupsAfterSimilarScreenshotDelete() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 8,
+                requestedBytes = 5_000L,
+                resolvedItemCount = 8,
+                stillNeedsReviewCount = 0,
+                stillNeedsReviewUris = emptyList(),
+                remainingGroupCount = 4,
+                remainingRecoverableBytes = 4_000L,
+                remainingHighPriorityGroupCount = 1,
+                remainingMediumPriorityGroupCount = 1,
+            ),
+        )
+
+        assertEquals("8 photos removed", status?.title)
+        assertEquals("2 priority groups still need review", status?.message)
+        assertEquals("Review priority groups next", status?.nextActionLabel)
+        assertEquals(
+            listOf(
+                PhotoPostDeleteMetric("Requested", "8"),
+                PhotoPostDeleteMetric("Deleted", "8"),
+                PhotoPostDeleteMetric("Still exists", "0"),
+                PhotoPostDeleteMetric("Remaining duplicates", "4 groups"),
+                PhotoPostDeleteMetric("Priority remaining", "2 groups"),
+            ),
+            status?.metrics,
+        )
+    }
+
     private fun duplicateGroup(vararg ids: String): DuplicateGroup {
         return DuplicateGroup(
             key = ids.joinToString(),

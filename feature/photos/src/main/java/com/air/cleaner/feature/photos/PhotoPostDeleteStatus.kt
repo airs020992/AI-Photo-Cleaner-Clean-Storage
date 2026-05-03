@@ -8,6 +8,7 @@ data class PhotoPostDeleteStatus(
     val remainingGroupCount: Int,
     val remainingRecoverableBytes: Long,
     val metrics: List<PhotoPostDeleteMetric> = emptyList(),
+    val nextActionLabel: String? = null,
 ) {
     companion object {
         fun from(reconciliation: PhotoDeleteReconciliation?): PhotoPostDeleteStatus? {
@@ -25,20 +26,37 @@ data class PhotoPostDeleteStatus(
                 message = when {
                     reconciliation.stillExistsCount > 0 -> "${reconciliation.stillExistsCount} selected ${photoNoun(reconciliation.stillExistsCount)} still ${if (reconciliation.stillExistsCount == 1) "exists" else "exist"} in your library"
                     reconciliation.remainingGroupCount == 0 -> "${reconciliation.resolvedItemCount} photos no longer appear in duplicate review"
+                    reconciliation.remainingPriorityGroupCount > 0 -> "${reconciliation.remainingPriorityGroupCount} priority ${if (reconciliation.remainingPriorityGroupCount == 1) "group" else "groups"} still ${if (reconciliation.remainingPriorityGroupCount == 1) "needs" else "need"} review"
                     reconciliation.stillNeedsReviewCount > 0 -> "${reconciliation.stillNeedsReviewCount} selected ${if (reconciliation.stillNeedsReviewCount == 1) "photo still appears" else "photos still appear"} in duplicate review"
                     else -> "${reconciliation.remainingGroupCount} duplicate ${if (reconciliation.remainingGroupCount == 1) "group" else "groups"} still ${if (reconciliation.remainingGroupCount == 1) "needs" else "need"} review"
                 },
                 remainingGroupCount = reconciliation.remainingGroupCount,
                 remainingRecoverableBytes = reconciliation.remainingRecoverableBytes,
-                metrics = listOf(
-                    PhotoPostDeleteMetric("Requested", reconciliation.requestedItemCount.toString()),
-                    PhotoPostDeleteMetric("Deleted", reconciliation.resolvedItemCount.toString()),
-                    PhotoPostDeleteMetric("Still exists", reconciliation.stillExistsCount.toString()),
-                    PhotoPostDeleteMetric(
-                        "Remaining duplicates",
-                        "${reconciliation.remainingGroupCount} ${if (reconciliation.remainingGroupCount == 1) "group" else "groups"}",
-                    ),
+                metrics = reconciliation.metrics(),
+                nextActionLabel = if (reconciliation.remainingPriorityGroupCount > 0) {
+                    "Review priority groups next"
+                } else {
+                    null
+                },
+            )
+        }
+
+        private fun PhotoDeleteReconciliation.metrics(): List<PhotoPostDeleteMetric> {
+            val baseMetrics = listOf(
+                PhotoPostDeleteMetric("Requested", requestedItemCount.toString()),
+                PhotoPostDeleteMetric("Deleted", resolvedItemCount.toString()),
+                PhotoPostDeleteMetric("Still exists", stillExistsCount.toString()),
+                PhotoPostDeleteMetric(
+                    "Remaining duplicates",
+                    "$remainingGroupCount ${if (remainingGroupCount == 1) "group" else "groups"}",
                 ),
+            )
+            if (remainingPriorityGroupCount == 0) {
+                return baseMetrics
+            }
+            return baseMetrics + PhotoPostDeleteMetric(
+                "Priority remaining",
+                "$remainingPriorityGroupCount ${if (remainingPriorityGroupCount == 1) "group" else "groups"}",
             )
         }
 

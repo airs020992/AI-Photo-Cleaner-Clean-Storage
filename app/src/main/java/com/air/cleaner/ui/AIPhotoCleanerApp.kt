@@ -220,6 +220,12 @@ fun AIPhotoCleanerApp() {
                             similarScreenshotGroups = similarScreenshotGroups.orEmpty(),
                         ),
                         stillExistingContentUris = lastStillExistingDeletedUris,
+                        remainingHighPriorityGroupCount = reviewContext.remainingHighPriorityGroups(
+                            similarScreenshotGroups = similarScreenshotGroups.orEmpty(),
+                        ),
+                        remainingMediumPriorityGroupCount = reviewContext.remainingMediumPriorityGroups(
+                            similarScreenshotGroups = similarScreenshotGroups.orEmpty(),
+                        ),
                     ),
                 )
             }

@@ -419,6 +419,14 @@ private fun PostDeleteStatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
+            status.nextActionLabel?.let { nextActionLabel ->
+                Text(
+                    text = nextActionLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
             if (status.metrics.isNotEmpty()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

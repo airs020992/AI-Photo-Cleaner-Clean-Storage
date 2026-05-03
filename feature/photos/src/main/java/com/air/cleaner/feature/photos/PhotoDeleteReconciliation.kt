@@ -12,13 +12,20 @@ data class PhotoDeleteReconciliation(
     val stillNeedsReviewUris: List<String>,
     val remainingGroupCount: Int,
     val remainingRecoverableBytes: Long,
+    val remainingHighPriorityGroupCount: Int = 0,
+    val remainingMediumPriorityGroupCount: Int = 0,
 ) {
+    val remainingPriorityGroupCount: Int =
+        remainingHighPriorityGroupCount + remainingMediumPriorityGroupCount
+
     companion object {
         fun from(
             summary: PhotoDeletionSummary?,
             result: PhotoDeletionResult?,
             currentGroups: List<DuplicateGroup>,
             stillExistingContentUris: List<String>? = null,
+            remainingHighPriorityGroupCount: Int = 0,
+            remainingMediumPriorityGroupCount: Int = 0,
         ): PhotoDeleteReconciliation? {
             if (summary == null || result?.status != PhotoDeletionStatus.Deleted) {
                 return null
@@ -43,6 +50,8 @@ data class PhotoDeleteReconciliation(
                 stillNeedsReviewUris = stillNeedsReviewUris,
                 remainingGroupCount = currentGroups.size,
                 remainingRecoverableBytes = currentGroups.sumOf { it.recoverableBytes },
+                remainingHighPriorityGroupCount = remainingHighPriorityGroupCount,
+                remainingMediumPriorityGroupCount = remainingMediumPriorityGroupCount,
             )
         }
     }
