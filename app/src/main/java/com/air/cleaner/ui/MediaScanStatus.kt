@@ -15,6 +15,25 @@ data class MediaScanStatus(
     val summary: MediaScanSummary? = null,
 )
 
+internal fun MediaScanStatus.similarLoadingProgress(): Float {
+    return when (phase) {
+        MediaScanPhase.CountingLibrary -> 0.18f
+        MediaScanPhase.FindingSimilarScreenshots -> 0.64f
+        MediaScanPhase.FindingDuplicatePhotos -> 0.88f
+        MediaScanPhase.ReconcilingDeletes -> 0.92f
+        MediaScanPhase.Complete -> 1f
+    }
+}
+
+internal fun MediaScanStatus.similarLoadingScopeLabel(): String {
+    val screenshotCount = summary?.screenshotCount
+    return if (screenshotCount == null) {
+        "Scan scope appears after media count finishes"
+    } else {
+        "$screenshotCount screenshots in scope"
+    }
+}
+
 internal fun MediaScanStatus.similarLoadingStepLabel(): String {
     return when (phase) {
         MediaScanPhase.CountingLibrary -> "Step 1 of 3 | Counting media"

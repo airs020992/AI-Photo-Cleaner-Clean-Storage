@@ -41,6 +41,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -427,13 +428,22 @@ private fun SimilarScreenshotsLoadingScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
+                LinearProgressIndicator(
+                    progress = { scanStatus.similarLoadingProgress() },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = scanStatus.similarLoadingScopeLabel(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text(
                     text = scanStatus.similarLoadingMessage(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "First scan can take up to a minute on large libraries.",
+                    text = "High-confidence groups appear automatically. We never delete anything from scan results.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

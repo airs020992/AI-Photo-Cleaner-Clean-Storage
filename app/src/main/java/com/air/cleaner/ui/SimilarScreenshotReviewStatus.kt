@@ -42,13 +42,13 @@ internal fun SimilarScreenshotReviewStatus.emptyMessage(): String {
             "Previous matches included photos that no longer exist. We removed stale candidates and are checking your library again."
         }
         SimilarScreenshotReviewStatus.Loading -> {
-            "We scanned your library and only show high-confidence near-duplicates. Try again after taking more screenshots."
+            "We checked screenshots for near-identical layouts and tiny visual changes. Nothing reached the safe review threshold yet. Try taking 2-3 screenshots of the same screen, then rescan."
         }
         SimilarScreenshotReviewStatus.CachedRefreshing -> {
-            "We scanned your library and only show high-confidence near-duplicates. Try again after taking more screenshots."
+            "We checked screenshots for near-identical layouts and tiny visual changes. Nothing reached the safe review threshold yet. Try taking 2-3 screenshots of the same screen, then rescan."
         }
         SimilarScreenshotReviewStatus.Fresh -> {
-            "We scanned your library and only show high-confidence near-duplicates. Try again after taking more screenshots."
+            "We checked screenshots for near-identical layouts and tiny visual changes. Nothing reached the safe review threshold yet. Try taking 2-3 screenshots of the same screen, then rescan."
         }
     }
 }

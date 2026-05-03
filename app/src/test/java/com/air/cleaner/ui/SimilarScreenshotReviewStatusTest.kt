@@ -30,7 +30,7 @@ class SimilarScreenshotReviewStatusTest {
 
         assertEquals("No similar screenshots found", status.emptyTitle())
         assertEquals(
-            "We scanned your library and only show high-confidence near-duplicates. Try again after taking more screenshots.",
+            "We checked screenshots for near-identical layouts and tiny visual changes. Nothing reached the safe review threshold yet. Try taking 2-3 screenshots of the same screen, then rescan.",
             status.emptyMessage(),
         )
         assertEquals("Rescan photos", status.emptyActionLabel())
