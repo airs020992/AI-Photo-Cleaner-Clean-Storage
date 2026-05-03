@@ -57,6 +57,7 @@ fun PhotoReviewScreen(
     emptyActionLabel: String? = null,
     onEmptyAction: (() -> Unit)? = null,
     itemMatchLabel: String = "Duplicate",
+    groupMatchExplanation: ((DuplicateGroup) -> String?)? = null,
 ) {
     var selectionState by remember(groups) {
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups))
@@ -106,6 +107,7 @@ fun PhotoReviewScreen(
                         selectionState = selectionState.toggle(itemId)
                     },
                     itemMatchLabel = itemMatchLabel,
+                    matchExplanation = groupMatchExplanation?.invoke(group),
                 )
             }
         }
@@ -346,6 +348,7 @@ private fun DuplicateGroupCard(
     onToggle: (String) -> Unit,
     modifier: Modifier = Modifier,
     itemMatchLabel: String = "Duplicate",
+    matchExplanation: String? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -362,6 +365,13 @@ private fun DuplicateGroupCard(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
+            matchExplanation?.let { explanation ->
+                Text(
+                    text = explanation,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             group.items.sortedBy { it.dateTakenMillis }.forEachIndexed { itemIndex, item ->
                 PhotoReviewRow(
                     item = item,
