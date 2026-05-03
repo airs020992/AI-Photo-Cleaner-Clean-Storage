@@ -19,6 +19,7 @@ class SimilarScreenshotTelemetryTest {
         assertEquals(
             setOf(
                 "similar_screenshots_entry_tapped",
+                "similar_screenshots_cache_loaded",
                 "similar_screenshots_rescan_tapped",
                 "similar_screenshots_scan_completed",
                 "similar_screenshots_review_shown",
@@ -166,12 +167,34 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun cacheLoadedEventCapturesCacheHitLatencyAndQuality() {
+        val event = SimilarScreenshotTelemetry.cacheLoaded(
+            elapsedMillis = 120L,
+            groups = listOf(group("cached", recoverableBytes = 2_500L)),
+            filteredToEmpty = false,
+        )
+
+        assertEquals("similar_screenshots_cache_loaded", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "elapsed_ms" to 120L,
+                "cache_hit" to true,
+                "filtered_empty" to false,
+                "group_count" to 1,
+                "recoverable_bytes" to 2_500L,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
     fun scanCompletedEventCapturesLatencyAndResultQuality() {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,
             scanSummary = scanSummary(screenshotCount = 18),
             groups = listOf(group("safe", recoverableBytes = 2_000L)),
             status = SimilarScreenshotReviewStatus.Fresh,
+            source = SimilarScreenshotScanSource.ColdScan,
         )
 
         assertEquals("similar_screenshots_scan_completed", event.name)
@@ -183,6 +206,7 @@ class SimilarScreenshotTelemetryTest {
                 "recoverable_bytes" to 2_000L,
                 "status" to "fresh",
                 "empty_result" to false,
+                "scan_source" to "cold_scan",
             ),
             event.properties,
         )

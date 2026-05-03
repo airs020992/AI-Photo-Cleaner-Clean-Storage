@@ -89,6 +89,16 @@ internal object SimilarScreenshotAnalyticsContract {
             ),
         ),
         AnalyticsEventContract(
+            name = "similar_screenshots_cache_loaded",
+            parameters = listOf(
+                AnalyticsParameterContract("cache_hit", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("elapsed_ms", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("filtered_empty", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
+            ),
+        ),
+        AnalyticsEventContract(
             name = "similar_screenshots_rescan_tapped",
             parameters = listOf(
                 AnalyticsParameterContract("current_group_count", AnalyticsParameterType.Long),
@@ -102,6 +112,7 @@ internal object SimilarScreenshotAnalyticsContract {
                 AnalyticsParameterContract("empty_result", AnalyticsParameterType.Boolean),
                 AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("scan_source", AnalyticsParameterType.String),
                 AnalyticsParameterContract("screenshot_count", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("status", AnalyticsParameterType.String),
             ),
@@ -239,6 +250,7 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsReport(analyticsE
         add("Product analytics: ${if (analyticsEnabled) "enabled" else "disabled"}")
         add(summary.similarFunnelProgressLabel)
         add(summary.similarFunnelNextStepLabel)
+        addAll(toSimilarScreenshotCacheInsightLabels())
         addAll(summary.similarScanInsightLabels)
         addAll(toSimilarScreenshotReviewInsightLabels())
         add(summary.latestEventLabel)
@@ -304,6 +316,7 @@ private fun Map<String, Any>.toStableDiagnosticsLabel(): String {
 private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): List<String> {
     val scanCompleted = firstOrNull { it.name == "similar_screenshots_scan_completed" }
         ?: return listOf("Similar photos scan: no scan completed event yet.")
+    val source = scanCompleted.properties["scan_source"] as? String
     val screenshotCount = scanCompleted.properties["screenshot_count"].asLongOrZero()
     val groupCount = scanCompleted.properties["group_count"].asLongOrZero()
     val emptyResult = scanCompleted.properties["empty_result"] as? Boolean ?: false
@@ -313,11 +326,36 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
             "Diagnosis: no screenshots were visible to the scan. Next: verify Photos permission and that screenshots are present in the media library."
         emptyResult ->
             "Diagnosis: screenshots were scanned, but no similar groups matched. Next: test with 2-3 near-duplicate screenshots of the same screen or tune the matching threshold."
+        source == SimilarScreenshotScanSource.ColdScan.analyticsValue ->
+            "Diagnosis: cold scan found similar groups. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target."
         else ->
             "Diagnosis: similar groups were found. Next: review selection quality and deletion confirmation."
     }
+    val scanLabelPrefix = if (source == null) {
+        "Similar photos scan:"
+    } else {
+        "Similar photos scan: source=$source,"
+    }
     return listOf(
-        "Similar photos scan: screenshots=$screenshotCount, groups=$groupCount, empty=$emptyResult, elapsed_ms=$elapsedMillis.",
+        "$scanLabelPrefix screenshots=$screenshotCount, groups=$groupCount, empty=$emptyResult, elapsed_ms=$elapsedMillis.",
+        diagnosis,
+    )
+}
+
+private fun List<CleanerTelemetryEvent>.toSimilarScreenshotCacheInsightLabels(): List<String> {
+    val cacheLoaded = firstOrNull { it.name == "similar_screenshots_cache_loaded" }
+        ?: return emptyList()
+    val cacheHit = cacheLoaded.properties["cache_hit"] as? Boolean ?: false
+    val filteredEmpty = cacheLoaded.properties["filtered_empty"] as? Boolean ?: false
+    val groupCount = cacheLoaded.properties["group_count"].asLongOrZero()
+    val elapsedMillis = cacheLoaded.properties["elapsed_ms"].asLongOrZero()
+    val diagnosis = if (cacheHit) {
+        "Diagnosis: cache hit opened saved Similar photos results quickly while a fresh scan can continue in the background."
+    } else {
+        "Diagnosis: no saved Similar photos result was available, so the user waits for a fresh scan."
+    }
+    return listOf(
+        "Similar photos cache: hit=$cacheHit, groups=$groupCount, filtered_empty=$filteredEmpty, elapsed_ms=$elapsedMillis.",
         diagnosis,
     )
 }
@@ -383,6 +421,23 @@ internal object SimilarScreenshotTelemetry {
         )
     }
 
+    fun cacheLoaded(
+        elapsedMillis: Long,
+        groups: List<DuplicateGroup>,
+        filteredToEmpty: Boolean,
+    ): CleanerTelemetryEvent {
+        return CleanerTelemetryEvent(
+            name = "similar_screenshots_cache_loaded",
+            properties = mapOf(
+                "elapsed_ms" to elapsedMillis.coerceAtLeast(0L),
+                "cache_hit" to groups.isNotEmpty(),
+                "filtered_empty" to filteredToEmpty,
+                "group_count" to groups.size,
+                "recoverable_bytes" to groups.sumOf { it.recoverableBytes },
+            ),
+        )
+    }
+
     fun rescanTapped(
         status: SimilarScreenshotReviewStatus,
         currentGroupCount: Int,
@@ -401,6 +456,7 @@ internal object SimilarScreenshotTelemetry {
         scanSummary: MediaScanSummary?,
         groups: List<DuplicateGroup>,
         status: SimilarScreenshotReviewStatus,
+        source: SimilarScreenshotScanSource = SimilarScreenshotScanSource.ColdScan,
     ): CleanerTelemetryEvent {
         return CleanerTelemetryEvent(
             name = "similar_screenshots_scan_completed",
@@ -410,6 +466,7 @@ internal object SimilarScreenshotTelemetry {
                 "group_count" to groups.size,
                 "recoverable_bytes" to groups.sumOf { it.recoverableBytes },
                 "status" to status.analyticsValue,
+                "scan_source" to source.analyticsValue,
                 "empty_result" to groups.isEmpty(),
             ),
         )
@@ -516,6 +573,19 @@ internal object SimilarScreenshotTelemetry {
         )
     }
 }
+
+internal enum class SimilarScreenshotScanSource {
+    ColdScan,
+    ManualRescan,
+    PostDeleteRefresh,
+}
+
+private val SimilarScreenshotScanSource.analyticsValue: String
+    get() = when (this) {
+        SimilarScreenshotScanSource.ColdScan -> "cold_scan"
+        SimilarScreenshotScanSource.ManualRescan -> "manual_rescan"
+        SimilarScreenshotScanSource.PostDeleteRefresh -> "post_delete_refresh"
+    }
 
 private val SimilarScreenshotReviewStatus.analyticsValue: String
     get() = name.lowercase()

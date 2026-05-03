@@ -272,6 +272,52 @@ class AnalyticsDiagnosticsTelemetryTest {
             report,
         )
     }
+
+    @Test
+    fun diagnosticsReportSeparatesCacheHitFromFreshScanLatency() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "screenshot_count" to 119L,
+                    "group_count" to 1L,
+                    "empty_result" to false,
+                    "elapsed_ms" to 6_275L,
+                    "scan_source" to "cold_scan",
+                ),
+            ),
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_cache_loaded",
+                properties = mapOf(
+                    "elapsed_ms" to 120L,
+                    "cache_hit" to true,
+                    "filtered_empty" to false,
+                    "group_count" to 1L,
+                    "recoverable_bytes" to 5_715_644L,
+                ),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = false)
+
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: disabled
+            Similar photos funnel: 1/8
+            Next: review the similar photo groups.
+            Similar photos cache: hit=true, groups=1, filtered_empty=false, elapsed_ms=120.
+            Diagnosis: cache hit opened saved Similar photos results quickly while a fresh scan can continue in the background.
+            Similar photos scan: source=cold_scan, screenshots=119, groups=1, empty=false, elapsed_ms=6275.
+            Diagnosis: cold scan found similar groups. Next: compare this latency against cache-hit time and optimize fingerprint reuse if cold scan stays above target.
+            Last local event: similar_screenshots_scan_completed
+            Recent events:
+            1. similar_screenshots_scan_completed | elapsed_ms=6275, empty_result=false, group_count=1, scan_source=cold_scan, screenshot_count=119
+            2. similar_screenshots_cache_loaded | cache_hit=true, elapsed_ms=120, filtered_empty=false, group_count=1, recoverable_bytes=5715644
+            """.trimIndent(),
+            report,
+        )
+    }
 }
 
 private class RecordingCleanerTelemetry(

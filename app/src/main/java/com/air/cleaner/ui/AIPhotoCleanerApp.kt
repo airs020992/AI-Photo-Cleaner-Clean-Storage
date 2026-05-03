@@ -159,6 +159,9 @@ fun AIPhotoCleanerApp() {
             var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotReviewStatus by remember { mutableStateOf(SimilarScreenshotReviewStatus.Loading) }
             var similarScreenshotScanStartedAtMillis by remember { mutableStateOf<Long?>(null) }
+            var similarScreenshotScanSource by remember {
+                mutableStateOf(SimilarScreenshotScanSource.ColdScan)
+            }
             var scanStatus by remember { mutableStateOf(MediaScanStatus()) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
@@ -191,6 +194,9 @@ fun AIPhotoCleanerApp() {
                         lastDeletedSummary = summary
                         lastDeletedReviewContext = pendingDeleteReviewContext
                         lastStillExistingDeletedUris = null
+                        if (pendingDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots) {
+                            similarScreenshotScanSource = SimilarScreenshotScanSource.PostDeleteRefresh
+                        }
                         scanRefreshKey += 1
                     }
                 }
@@ -204,11 +210,21 @@ fun AIPhotoCleanerApp() {
                     similarScreenshotFingerprintCache = SharedPreferencesPerceptualFingerprintCache(context),
                     similarScreenshotResultCache = SharedPreferencesSimilarScreenshotResultCache(context),
                 )
-                val shouldUseCachedSimilarResults = lastDeletedResult?.shouldRefreshScan != true
+                val shouldUseCachedSimilarResults =
+                    lastDeletedResult?.shouldRefreshScan != true &&
+                        similarScreenshotScanSource == SimilarScreenshotScanSource.ColdScan
                 if (shouldUseCachedSimilarResults) {
+                    val cacheLoadStartedAtMillis = SystemClock.elapsedRealtime()
                     val cachedSimilarScreenshotResult = withContext(Dispatchers.IO) {
                         repository.cachedSimilarScreenshotGroupResult()
                     }
+                    telemetry.track(
+                        SimilarScreenshotTelemetry.cacheLoaded(
+                            elapsedMillis = SystemClock.elapsedRealtime() - cacheLoadStartedAtMillis,
+                            groups = cachedSimilarScreenshotResult.groups,
+                            filteredToEmpty = cachedSimilarScreenshotResult.filteredToEmpty,
+                        ),
+                    )
                     if (cachedSimilarScreenshotResult.groups.isNotEmpty()) {
                         similarScreenshotGroups = cachedSimilarScreenshotResult.groups
                         similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.CachedRefreshing
@@ -243,8 +259,10 @@ fun AIPhotoCleanerApp() {
                         scanSummary = scanSummary,
                         groups = freshSimilarScreenshotGroups,
                         status = SimilarScreenshotReviewStatus.Fresh,
+                        source = similarScreenshotScanSource,
                     ),
                 )
+                similarScreenshotScanSource = SimilarScreenshotScanSource.ColdScan
                 withContext(Dispatchers.IO) {
                     repository.saveSimilarScreenshotGroups(freshSimilarScreenshotGroups)
                 }
@@ -328,6 +346,7 @@ fun AIPhotoCleanerApp() {
                     )
                     similarScreenshotGroups = null
                     similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
+                    similarScreenshotScanSource = SimilarScreenshotScanSource.ManualRescan
                     scanRefreshKey += 1
                 },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
