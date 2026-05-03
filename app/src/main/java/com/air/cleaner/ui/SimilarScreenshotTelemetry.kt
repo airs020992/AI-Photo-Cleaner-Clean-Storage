@@ -215,6 +215,26 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsSummary(): Analyt
     )
 }
 
+internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsReport(analyticsEnabled: Boolean): String {
+    val summary = toAnalyticsDiagnosticsSummary()
+    val recentEventLines = if (isEmpty()) {
+        listOf("none")
+    } else {
+        mapIndexed { index, event ->
+            "${index + 1}. ${event.name} | ${event.properties.toStableDiagnosticsLabel()}"
+        }
+    }
+    return buildList {
+        add("AI Photo Cleaner diagnostics")
+        add("Product analytics: ${if (analyticsEnabled) "enabled" else "disabled"}")
+        add(summary.similarFunnelProgressLabel)
+        add(summary.similarFunnelNextStepLabel)
+        add(summary.latestEventLabel)
+        add("Recent events:")
+        addAll(recentEventLines)
+    }.joinToString(separator = "\n")
+}
+
 private data class SimilarScreenshotDiagnosticsStep(
     val name: String,
     val nextActionLabel: String,
@@ -254,6 +274,10 @@ private val similarScreenshotDiagnosticsFunnel = listOf(
         nextActionLabel = "Next: closed loop captured.",
     ),
 )
+
+private fun Map<String, Any>.toStableDiagnosticsLabel(): String {
+    return entries.sortedBy { it.key }.joinToString(separator = ", ") { (key, value) -> "$key=$value" }
+}
 
 private fun Map<String, Any>.toFirebaseBundle(): Bundle {
     return Bundle().apply {

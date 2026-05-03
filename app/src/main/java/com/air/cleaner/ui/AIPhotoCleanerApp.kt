@@ -67,8 +67,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -775,6 +777,7 @@ private fun SettingsTabScreen(
     contentPadding: PaddingValues,
 ) {
     ScreenColumn(contentPadding = contentPadding) {
+        val clipboardManager = LocalClipboardManager.current
         TopHeader(title = "Settings", action = "v0.1")
         PremiumSurface {
             Row(
@@ -820,6 +823,9 @@ private fun SettingsTabScreen(
         }
         if (BuildConfig.DEBUG) {
             val diagnosticsSummary = analyticsDiagnosticsEvents.toAnalyticsDiagnosticsSummary()
+            val diagnosticsReport = analyticsDiagnosticsEvents.toAnalyticsDiagnosticsReport(
+                analyticsEnabled = analyticsEnabled,
+            )
             PremiumSurface {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -851,6 +857,13 @@ private fun SettingsTabScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Button(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(diagnosticsReport))
+                        },
+                    ) {
+                        Text("Copy diagnostics")
+                    }
                     if (analyticsDiagnosticsEvents.isEmpty()) {
                         Text(
                             text = "No local analytics events recorded in this session.",

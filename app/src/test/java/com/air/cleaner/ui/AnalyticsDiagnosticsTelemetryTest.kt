@@ -47,4 +47,37 @@ class AnalyticsDiagnosticsTelemetryTest {
         assertEquals("Next: open Photos > Similar photos.", summary.similarFunnelNextStepLabel)
         assertEquals("Last local event: none", summary.latestEventLabel)
     }
+
+    @Test
+    fun diagnosticsReportIsCopyReadyForDeviceTriage() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_post_delete_action",
+                properties = mapOf(
+                    "action" to "review_priority_groups",
+                    "remaining_groups" to 4L,
+                ),
+            ),
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_system_delete_result",
+                properties = mapOf("confirmed" to true),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = true)
+
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: enabled
+            Similar photos funnel: 2/8
+            Next: closed loop captured.
+            Last local event: similar_screenshots_post_delete_action
+            Recent events:
+            1. similar_screenshots_post_delete_action | action=review_priority_groups, remaining_groups=4
+            2. similar_screenshots_system_delete_result | confirmed=true
+            """.trimIndent(),
+            report,
+        )
+    }
 }
