@@ -819,6 +819,7 @@ private fun SettingsTabScreen(
             }
         }
         if (BuildConfig.DEBUG) {
+            val diagnosticsSummary = analyticsDiagnosticsEvents.toAnalyticsDiagnosticsSummary()
             PremiumSurface {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -832,6 +833,21 @@ private fun SettingsTabScreen(
                         } else {
                             "Product analytics is off. Events should stay empty until enabled."
                         },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = diagnosticsSummary.similarFunnelProgressLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = diagnosticsSummary.similarFunnelNextStepLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = diagnosticsSummary.latestEventLabel,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

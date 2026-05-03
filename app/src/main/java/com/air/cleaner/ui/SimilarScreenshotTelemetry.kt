@@ -14,6 +14,12 @@ internal data class CleanerTelemetryEvent(
     val properties: Map<String, Any>,
 )
 
+internal data class AnalyticsDiagnosticsSummary(
+    val latestEventLabel: String,
+    val similarFunnelProgressLabel: String,
+    val similarFunnelNextStepLabel: String,
+)
+
 internal interface CleanerTelemetry {
     fun track(event: CleanerTelemetryEvent)
 }
@@ -192,6 +198,62 @@ internal class AnalyticsDiagnosticsTelemetry(
         onEventsChanged(recentEvents.toList())
     }
 }
+
+internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsSummary(): AnalyticsDiagnosticsSummary {
+    val eventNames = map { it.name }.toSet()
+    val completedSteps = similarScreenshotDiagnosticsFunnel.count { it.name in eventNames }
+    val furthestStepIndex = similarScreenshotDiagnosticsFunnel.indexOfLast { it.name in eventNames }
+    val nextActionLabel = if (furthestStepIndex == -1) {
+        "Next: open Photos > Similar photos."
+    } else {
+        similarScreenshotDiagnosticsFunnel[furthestStepIndex].nextActionLabel
+    }
+    return AnalyticsDiagnosticsSummary(
+        latestEventLabel = firstOrNull()?.let { "Last local event: ${it.name}" } ?: "Last local event: none",
+        similarFunnelProgressLabel = "Similar photos funnel: $completedSteps/${similarScreenshotDiagnosticsFunnel.size}",
+        similarFunnelNextStepLabel = nextActionLabel,
+    )
+}
+
+private data class SimilarScreenshotDiagnosticsStep(
+    val name: String,
+    val nextActionLabel: String,
+)
+
+private val similarScreenshotDiagnosticsFunnel = listOf(
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_entry_tapped",
+        nextActionLabel = "Next: wait for the scan to finish.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_scan_completed",
+        nextActionLabel = "Next: review the similar photo groups.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_review_shown",
+        nextActionLabel = "Next: adjust selection or tap Continue.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_selection_changed",
+        nextActionLabel = "Next: tap Continue.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_continue_tapped",
+        nextActionLabel = "Next: confirm the in-app delete dialog.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_delete_requested",
+        nextActionLabel = "Next: confirm the Android delete dialog.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_system_delete_result",
+        nextActionLabel = "Next: tap the result card CTA.",
+    ),
+    SimilarScreenshotDiagnosticsStep(
+        name = "similar_screenshots_post_delete_action",
+        nextActionLabel = "Next: closed loop captured.",
+    ),
+)
 
 private fun Map<String, Any>.toFirebaseBundle(): Bundle {
     return Bundle().apply {
