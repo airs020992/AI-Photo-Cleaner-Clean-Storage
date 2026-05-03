@@ -2,6 +2,7 @@ package com.air.cleaner.data.media
 
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
+import kotlin.math.abs
 
 data class SimilarScreenshotCandidate(
     val item: MediaItem,
@@ -22,6 +23,7 @@ data class SimilarScreenshotCandidate(
 class SimilarScreenshotScanner(
     private val perceptualFingerprint: (SimilarScreenshotCandidate) -> String?,
     private val maxHashDistance: Int = DEFAULT_MAX_HASH_DISTANCE,
+    private val maxNearbyCaptureGapMillis: Long = DEFAULT_MAX_NEARBY_CAPTURE_GAP_MILLIS,
 ) {
     fun findSimilarGroups(candidates: List<SimilarScreenshotCandidate>): List<DuplicateGroup> {
         var groupIndex = 0
@@ -32,6 +34,8 @@ class SimilarScreenshotScanner(
             .groupBy { "${it.item.width}:${it.item.height}" }
             .filterValues { it.size > 1 }
             .values
+            .map { bucket -> bucket.withNearbyCaptureNeighbors() }
+            .filter { it.size > 1 }
             .flatMap { bucket ->
                 val fingerprinted = bucket.mapNotNull { candidate ->
                     perceptualFingerprint(candidate)?.let { hash ->
@@ -75,6 +79,15 @@ class SimilarScreenshotScanner(
         return groups
     }
 
+    private fun List<SimilarScreenshotCandidate>.withNearbyCaptureNeighbors(): List<SimilarScreenshotCandidate> {
+        return filter { candidate ->
+            any { other ->
+                other.item.id != candidate.item.id &&
+                    abs(other.item.dateTakenMillis - candidate.item.dateTakenMillis) <= maxNearbyCaptureGapMillis
+            }
+        }
+    }
+
     private fun SimilarScreenshotCandidate.isScreenshot(): Boolean {
         return item.displayName.contains("screenshot", ignoreCase = true) ||
             relativePath.orEmpty().contains("screenshot", ignoreCase = true)
@@ -87,5 +100,6 @@ class SimilarScreenshotScanner(
 
     companion object {
         private const val DEFAULT_MAX_HASH_DISTANCE = 18
+        private const val DEFAULT_MAX_NEARBY_CAPTURE_GAP_MILLIS = 10 * 60 * 1_000L
     }
 }
