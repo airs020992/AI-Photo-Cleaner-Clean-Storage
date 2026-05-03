@@ -110,6 +110,7 @@ fun AIPhotoCleanerApp() {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
+            var similarScreenshotReviewStatus by remember { mutableStateOf(SimilarScreenshotReviewStatus.Loading) }
             var scanStatus by remember { mutableStateOf(MediaScanStatus()) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
@@ -143,9 +144,21 @@ fun AIPhotoCleanerApp() {
                     similarScreenshotFingerprintCache = SharedPreferencesPerceptualFingerprintCache(context),
                     similarScreenshotResultCache = SharedPreferencesSimilarScreenshotResultCache(context),
                 )
-                similarScreenshotGroups = withContext(Dispatchers.IO) {
-                    repository.cachedSimilarScreenshotGroups()
-                }.takeIf { it.isNotEmpty() } ?: similarScreenshotGroups
+                val shouldUseCachedSimilarResults = lastDeletedResult?.shouldRefreshScan != true
+                if (shouldUseCachedSimilarResults) {
+                    val cachedSimilarScreenshotGroups = withContext(Dispatchers.IO) {
+                        repository.cachedSimilarScreenshotGroups()
+                    }
+                    if (cachedSimilarScreenshotGroups.isNotEmpty()) {
+                        similarScreenshotGroups = cachedSimilarScreenshotGroups
+                        similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.CachedRefreshing
+                    } else {
+                        similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
+                    }
+                } else {
+                    similarScreenshotGroups = null
+                    similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Loading
+                }
                 scanStatus = MediaScanStatus(MediaScanPhase.CountingLibrary)
                 scanSummary = withContext(Dispatchers.IO) {
                     repository.scanSummary()
@@ -154,11 +167,13 @@ fun AIPhotoCleanerApp() {
                     phase = MediaScanPhase.FindingSimilarScreenshots,
                     summary = scanSummary,
                 )
-                similarScreenshotGroups = withContext(Dispatchers.IO) {
+                val freshSimilarScreenshotGroups = withContext(Dispatchers.IO) {
                     repository.scanSimilarScreenshotGroups()
                 }
+                similarScreenshotGroups = freshSimilarScreenshotGroups
+                similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh
                 withContext(Dispatchers.IO) {
-                    repository.saveSimilarScreenshotGroups(similarScreenshotGroups.orEmpty())
+                    repository.saveSimilarScreenshotGroups(freshSimilarScreenshotGroups)
                 }
                 scanStatus = MediaScanStatus(
                     phase = MediaScanPhase.FindingDuplicatePhotos,
@@ -190,6 +205,7 @@ fun AIPhotoCleanerApp() {
                 scanStatus = scanStatus,
                 duplicatePhotoGroups = duplicatePhotoGroups,
                 similarScreenshotGroups = similarScreenshotGroups,
+                similarScreenshotReviewStatus = similarScreenshotReviewStatus,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = {
                     navigationState = navigationState.openDuplicatePhotos(
@@ -243,6 +259,7 @@ private fun MainAppShell(
     scanStatus: MediaScanStatus,
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
+    similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
@@ -308,6 +325,8 @@ private fun MainAppShell(
                         emptyTitle = "No similar screenshots found",
                         emptyMessage = "Small visual differences are grouped only when confidence is high enough. Nothing is deleted automatically.",
                         itemMatchLabel = "Similar screenshot",
+                        noticeTitle = similarScreenshotReviewStatus.noticeTitle(),
+                        noticeMessage = similarScreenshotReviewStatus.noticeMessage(),
                     )
                 }
             }
@@ -916,6 +935,7 @@ private fun MainAppShellPreview() {
             ),
             duplicatePhotoGroups = emptyList(),
             similarScreenshotGroups = emptyList(),
+            similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh,
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onOpenSimilarScreenshots = {},

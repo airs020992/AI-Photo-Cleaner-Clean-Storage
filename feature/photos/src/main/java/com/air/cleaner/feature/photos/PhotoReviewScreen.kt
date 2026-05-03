@@ -50,6 +50,8 @@ fun PhotoReviewScreen(
     onContinue: (PhotoReviewSelectionState) -> Unit,
     modifier: Modifier = Modifier,
     postDeleteStatus: PhotoPostDeleteStatus? = null,
+    noticeTitle: String? = null,
+    noticeMessage: String? = null,
     emptyTitle: String = "No duplicate photos found",
     emptyMessage: String = "We only show likely matches for review. Nothing is selected or deleted automatically.",
     itemMatchLabel: String = "Duplicate",
@@ -77,6 +79,12 @@ fun PhotoReviewScreen(
         )
         postDeleteStatus?.let { status ->
             PostDeleteStatusCard(status = status)
+        }
+        if (noticeTitle != null && noticeMessage != null) {
+            ReviewNoticeCard(
+                title = noticeTitle,
+                message = noticeMessage,
+            )
         }
 
         if (groups.isEmpty()) {
@@ -117,6 +125,37 @@ fun PhotoReviewScreen(
             ) {
                 Text("Continue")
             }
+        }
+    }
+}
+
+@Composable
+private fun ReviewNoticeCard(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
         }
     }
 }
