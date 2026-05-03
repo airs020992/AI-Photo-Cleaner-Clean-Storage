@@ -58,9 +58,10 @@ fun PhotoReviewScreen(
     onEmptyAction: (() -> Unit)? = null,
     itemMatchLabel: String = "Duplicate",
     groupMatchExplanation: ((DuplicateGroup) -> String?)? = null,
+    keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
-    var selectionState by remember(groups) {
-        mutableStateOf(PhotoReviewSelectionState.fromGroups(groups))
+    var selectionState by remember(groups, keepStrategy) {
+        mutableStateOf(PhotoReviewSelectionState.fromGroups(groups, keepStrategy))
     }
 
     Column(
@@ -108,6 +109,7 @@ fun PhotoReviewScreen(
                     },
                     itemMatchLabel = itemMatchLabel,
                     matchExplanation = groupMatchExplanation?.invoke(group),
+                    keepStrategy = keepStrategy,
                 )
             }
         }
@@ -349,6 +351,7 @@ private fun DuplicateGroupCard(
     modifier: Modifier = Modifier,
     itemMatchLabel: String = "Duplicate",
     matchExplanation: String? = null,
+    keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -372,10 +375,11 @@ private fun DuplicateGroupCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            group.items.sortedBy { it.dateTakenMillis }.forEachIndexed { itemIndex, item ->
+            val keepItem = group.keepItem(keepStrategy)
+            group.items.sortedByDescending { it.dateTakenMillis }.forEach { item ->
                 PhotoReviewRow(
                     item = item,
-                    isRecommendedKeep = itemIndex == 0,
+                    isRecommendedKeep = item.id == keepItem.id,
                     selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
                     onToggle = { onToggle(item.id) },
                     itemMatchLabel = itemMatchLabel,

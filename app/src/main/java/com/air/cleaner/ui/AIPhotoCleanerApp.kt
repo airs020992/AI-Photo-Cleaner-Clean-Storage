@@ -87,6 +87,7 @@ import com.air.cleaner.feature.photos.PhotoDeleteReconciliation
 import com.air.cleaner.feature.photos.PhotoDeletionResult
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
+import com.air.cleaner.feature.photos.PhotoReviewKeepStrategy
 import com.air.cleaner.feature.photos.PhotoReviewScreen
 import com.air.cleaner.feature.photos.similarScreenshotMatchExplanation
 import kotlinx.coroutines.Dispatchers
@@ -340,6 +341,7 @@ private fun MainAppShell(
                         groupMatchExplanation = { group -> group.similarScreenshotMatchExplanation() },
                         noticeTitle = similarScreenshotReviewStatus.noticeTitle(),
                         noticeMessage = similarScreenshotReviewStatus.noticeMessage(),
+                        keepStrategy = PhotoReviewKeepStrategy.Newest,
                     )
                 }
             }

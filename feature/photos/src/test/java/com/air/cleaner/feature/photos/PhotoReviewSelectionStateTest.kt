@@ -46,6 +46,24 @@ class PhotoReviewSelectionStateTest {
     }
 
     @Test
+    fun canDefaultToKeepingTheNewestItem() {
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("larger-old", 3_000L, 100L),
+                    mediaItem("smaller-new", 2_000L, 200L),
+                ),
+            ),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertTrue(state.isSelectedForDeletion("larger-old"))
+        assertFalse(state.isSelectedForDeletion("smaller-new"))
+        assertEquals(1, state.selectedCount)
+        assertEquals(3_000L, state.selectedBytes)
+    }
+
+    @Test
     fun preventsSelectingEveryItemInAGroupForDeletion() {
         val state = PhotoReviewSelectionState.fromGroups(
             groups = listOf(

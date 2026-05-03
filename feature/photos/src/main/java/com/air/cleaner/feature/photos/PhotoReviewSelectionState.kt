@@ -3,6 +3,11 @@ package com.air.cleaner.feature.photos
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
 
+enum class PhotoReviewKeepStrategy {
+    Recommended,
+    Newest,
+}
+
 data class PhotoReviewSelectionState(
     private val groups: List<DuplicateGroup>,
     private val selectedIds: Set<String>,
@@ -38,14 +43,24 @@ data class PhotoReviewSelectionState(
     }
 
     companion object {
-        fun fromGroups(groups: List<DuplicateGroup>): PhotoReviewSelectionState {
+        fun fromGroups(
+            groups: List<DuplicateGroup>,
+            keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
+        ): PhotoReviewSelectionState {
             val selectedIds = groups
                 .flatMap { group ->
-                    group.items.filterNot { item -> item.id == group.recommendedKeep.id }
+                    group.items.filterNot { item -> item.id == group.keepItem(keepStrategy).id }
                 }
                 .map { it.id }
                 .toSet()
             return PhotoReviewSelectionState(groups = groups, selectedIds = selectedIds)
         }
+    }
+}
+
+fun DuplicateGroup.keepItem(strategy: PhotoReviewKeepStrategy): MediaItem {
+    return when (strategy) {
+        PhotoReviewKeepStrategy.Recommended -> recommendedKeep
+        PhotoReviewKeepStrategy.Newest -> items.maxBy { it.dateTakenMillis }
     }
 }

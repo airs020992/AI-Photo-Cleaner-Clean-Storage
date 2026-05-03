@@ -45,7 +45,10 @@ class SimilarScreenshotScanner(
                     },
                 )
             }
-            .sortedByDescending { it.recoverableBytes }
+            .sortedWith(
+                compareByDescending<DuplicateGroup> { it.recoverableBytes }
+                    .thenByDescending { group -> group.items.maxOf { it.dateTakenMillis } },
+            )
     }
 
     private fun List<FingerprintedScreenshot>.toSimilarGroups(nextKey: () -> String): List<DuplicateGroup> {
