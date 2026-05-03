@@ -10,6 +10,29 @@ import org.junit.Test
 
 class SimilarScreenshotTelemetryTest {
     @Test
+    fun similarScreenshotEventsHaveStableGa4SafeContract() {
+        val contracts = SimilarScreenshotAnalyticsContract.events
+
+        assertEquals(
+            setOf(
+                "similar_screenshots_entry_tapped",
+                "similar_screenshots_rescan_tapped",
+                "similar_screenshots_scan_completed",
+                "similar_screenshots_continue_tapped",
+                "similar_screenshots_system_delete_result",
+            ),
+            contracts.map { it.name }.toSet(),
+        )
+        contracts.forEach { contract ->
+            assertEquals(true, contract.name.matches(Regex("[a-z][a-z0-9_]{0,39}")))
+            contract.parameters.forEach { parameter ->
+                assertEquals(true, parameter.name.matches(Regex("[a-z][a-z0-9_]{0,39}")))
+                assertEquals(true, parameter.type in AnalyticsParameterType.entries)
+            }
+        }
+    }
+
+    @Test
     fun consentAwareTelemetryDropsEventsWhenAnalyticsIsDisabled() {
         val recordingTelemetry = RecordingCleanerTelemetry()
         val telemetry = ConsentAwareCleanerTelemetry(

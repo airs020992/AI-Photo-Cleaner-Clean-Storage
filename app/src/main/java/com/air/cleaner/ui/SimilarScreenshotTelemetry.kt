@@ -35,12 +35,82 @@ internal class SafeCleanerTelemetry(
     private val delegate: CleanerTelemetry,
 ) : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
-        val safeProperties = SAFE_ANALYTICS_SCHEMA[event.name] ?: return
+        val safeProperties = SimilarScreenshotAnalyticsContract.safePropertyNames[event.name] ?: return
         delegate.track(
             event.copy(
                 properties = event.properties.filterKeys { it in safeProperties },
             ),
         )
+    }
+}
+
+internal enum class AnalyticsParameterType {
+    Boolean,
+    Long,
+    String,
+}
+
+internal data class AnalyticsParameterContract(
+    val name: String,
+    val type: AnalyticsParameterType,
+)
+
+internal data class AnalyticsEventContract(
+    val name: String,
+    val parameters: List<AnalyticsParameterContract>,
+)
+
+internal object SimilarScreenshotAnalyticsContract {
+    val events = listOf(
+        AnalyticsEventContract(
+            name = "similar_screenshots_entry_tapped",
+            parameters = listOf(
+                AnalyticsParameterContract("groups_loaded", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("status", AnalyticsParameterType.String),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_rescan_tapped",
+            parameters = listOf(
+                AnalyticsParameterContract("current_group_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("status", AnalyticsParameterType.String),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_scan_completed",
+            parameters = listOf(
+                AnalyticsParameterContract("elapsed_ms", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("empty_result", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("group_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("recoverable_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("screenshot_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("status", AnalyticsParameterType.String),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_continue_tapped",
+            parameters = listOf(
+                AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("total_groups", AnalyticsParameterType.Long),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_system_delete_result",
+            parameters = listOf(
+                AnalyticsParameterContract("confirmed", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+            ),
+        ),
+    )
+
+    val safePropertyNames = events.associate { event ->
+        event.name to event.parameters.map { parameter -> parameter.name }.toSet()
     }
 }
 
@@ -80,39 +150,6 @@ private fun Map<String, Any>.toFirebaseBundle(): Bundle {
         }
     }
 }
-
-private val SAFE_ANALYTICS_SCHEMA = mapOf(
-    "similar_screenshots_entry_tapped" to setOf(
-        "groups_loaded",
-        "group_count",
-        "recoverable_bytes",
-        "status",
-    ),
-    "similar_screenshots_rescan_tapped" to setOf(
-        "current_group_count",
-        "status",
-    ),
-    "similar_screenshots_scan_completed" to setOf(
-        "elapsed_ms",
-        "empty_result",
-        "group_count",
-        "recoverable_bytes",
-        "screenshot_count",
-        "status",
-    ),
-    "similar_screenshots_continue_tapped" to setOf(
-        "priority_groups",
-        "selected_bytes",
-        "selected_count",
-        "total_groups",
-    ),
-    "similar_screenshots_system_delete_result" to setOf(
-        "confirmed",
-        "priority_groups",
-        "selected_bytes",
-        "selected_count",
-    ),
-)
 
 internal object SimilarScreenshotTelemetry {
     fun entryTapped(
