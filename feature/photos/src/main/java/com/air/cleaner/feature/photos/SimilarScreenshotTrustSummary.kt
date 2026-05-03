@@ -28,6 +28,7 @@ fun DuplicateGroup.similarScreenshotTrustSummary(
             "Confidence: same screen size + visual fingerprint",
             "Range: ${trustCaptureRangeLabel()}",
             keepGuidance.riskLine,
+            keepGuidance.reviewPriorityLine,
         ),
     )
 }

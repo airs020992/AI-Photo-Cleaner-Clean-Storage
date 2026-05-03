@@ -159,6 +159,7 @@ fun PhotoReviewScreen(
                     itemMatchLabel = itemMatchLabel,
                     keepReasonLine = keepGuidance.keepReasonLine,
                     riskLine = keepGuidance.riskLine,
+                    reviewPriorityLine = keepGuidance.reviewPriorityLine,
                 ),
                 session = session,
                 onPrevious = {
@@ -783,6 +784,13 @@ private fun PhotoPreviewDialog(
                             text = riskLine,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    detail.reviewPriorityLine?.let { reviewPriorityLine ->
+                        Text(
+                            text = reviewPriorityLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Button(onClick = onToggleSelection) {

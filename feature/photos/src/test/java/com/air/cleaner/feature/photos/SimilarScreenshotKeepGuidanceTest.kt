@@ -42,11 +42,51 @@ class SimilarScreenshotKeepGuidanceTest {
         )
     }
 
+    @Test
+    fun farApartScreenshotsRequireHighPriorityReview() {
+        val group = DuplicateGroup(
+            key = "similar-screenshot:far-apart",
+            items = listOf(
+                item("morning", "Screenshot morning.png", dateTakenMillis = 1_000L),
+                item("next-day", "Screenshot next day.png", dateTakenMillis = 90_001_000L),
+            ),
+        )
+
+        val guidance = group.similarScreenshotKeepGuidance(PhotoReviewKeepStrategy.Newest)
+
+        assertEquals(
+            "Risk: captured in different sessions; review before deleting",
+            guidance.riskLine,
+        )
+        assertEquals("Review priority: high", guidance.reviewPriorityLine)
+    }
+
+    @Test
+    fun mixedDimensionsRequireMediumPriorityReview() {
+        val group = DuplicateGroup(
+            key = "similar-screenshot:mixed-dimensions",
+            items = listOf(
+                item("portrait", "Screenshot portrait.png", dateTakenMillis = 1_000L, width = 1440, height = 3120),
+                item("crop", "Screenshot crop.png", dateTakenMillis = 2_000L, width = 1080, height = 2400),
+            ),
+        )
+
+        val guidance = group.similarScreenshotKeepGuidance(PhotoReviewKeepStrategy.Newest)
+
+        assertEquals(
+            "Risk: mixed dimensions; compare before deleting",
+            guidance.riskLine,
+        )
+        assertEquals("Review priority: medium", guidance.reviewPriorityLine)
+    }
+
     private fun item(
         id: String,
         displayName: String,
         sizeBytes: Long = 1_000_000L,
         dateTakenMillis: Long,
+        width: Int? = 1440,
+        height: Int? = 3120,
     ): MediaItem {
         return MediaItem(
             id = id,
@@ -56,8 +96,8 @@ class SimilarScreenshotKeepGuidanceTest {
             contentHash = id,
             mediaType = MediaType.Image,
             contentUri = "content://images/$id",
-            width = 1440,
-            height = 3120,
+            width = width,
+            height = height,
         )
     }
 }

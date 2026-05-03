@@ -28,6 +28,7 @@ class SimilarScreenshotTrustSummaryTest {
                 "Confidence: same screen size + visual fingerprint",
                 "Range: captured 4 sec apart",
                 "Risk: low; still review before deleting",
+                "Review priority: normal",
             ),
             summary.lines,
         )

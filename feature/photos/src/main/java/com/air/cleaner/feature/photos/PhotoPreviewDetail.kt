@@ -11,6 +11,7 @@ data class PhotoPreviewDetail(
     val metadataLine: String,
     val keepReasonLine: String?,
     val riskLine: String?,
+    val reviewPriorityLine: String?,
     val selectedForDeletion: Boolean,
 )
 
@@ -20,6 +21,7 @@ fun MediaItem.toPhotoPreviewDetail(
     itemMatchLabel: String,
     keepReasonLine: String? = null,
     riskLine: String? = null,
+    reviewPriorityLine: String? = null,
 ): PhotoPreviewDetail {
     val sizeLabel = formatPreviewBytes(sizeBytes)
     val roleLabel = if (isRecommendedKeep) "Recommended keep" else itemMatchLabel
@@ -38,6 +40,7 @@ fun MediaItem.toPhotoPreviewDetail(
         metadataLine = "Size: $sizeLabel | $dimensionsLabel",
         keepReasonLine = keepReasonLine,
         riskLine = riskLine,
+        reviewPriorityLine = reviewPriorityLine,
         selectedForDeletion = selectedForDeletion,
     )
 }
