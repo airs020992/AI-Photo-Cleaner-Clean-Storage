@@ -93,6 +93,7 @@ class AnalyticsDiagnosticsTelemetryTest {
         val shareContent = events.toAnalyticsDiagnosticsShareContent(analyticsEnabled = false)
 
         assertEquals("AI Photo Cleaner diagnostics", shareContent.title)
+        assertEquals("No share target found. Diagnostics copied instead.", shareContent.unavailableMessage)
         assertEquals(
             """
             AI Photo Cleaner diagnostics

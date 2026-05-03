@@ -2,12 +2,14 @@ package com.air.cleaner.ui
 
 import android.Manifest
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -875,7 +877,16 @@ private fun SettingsTabScreen(
                                 .setType("text/plain")
                                 .putExtra(Intent.EXTRA_SUBJECT, diagnosticsShareContent.title)
                                 .putExtra(Intent.EXTRA_TEXT, diagnosticsShareContent.text)
-                            context.startActivity(Intent.createChooser(shareIntent, diagnosticsShareContent.title))
+                            try {
+                                context.startActivity(Intent.createChooser(shareIntent, diagnosticsShareContent.title))
+                            } catch (_: ActivityNotFoundException) {
+                                clipboardManager.setText(AnnotatedString(diagnosticsShareContent.text))
+                                Toast.makeText(
+                                    context,
+                                    diagnosticsShareContent.unavailableMessage,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
                         },
                     ) {
                         Text("Share diagnostics")

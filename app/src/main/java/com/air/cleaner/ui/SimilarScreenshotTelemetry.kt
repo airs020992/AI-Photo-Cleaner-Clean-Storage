@@ -23,6 +23,7 @@ internal data class AnalyticsDiagnosticsSummary(
 internal data class AnalyticsDiagnosticsShareContent(
     val title: String,
     val text: String,
+    val unavailableMessage: String,
 )
 
 internal interface CleanerTelemetry {
@@ -246,6 +247,7 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsShareContent(
     return AnalyticsDiagnosticsShareContent(
         title = "AI Photo Cleaner diagnostics",
         text = toAnalyticsDiagnosticsReport(analyticsEnabled = analyticsEnabled),
+        unavailableMessage = "No share target found. Diagnostics copied instead.",
     )
 }
 
