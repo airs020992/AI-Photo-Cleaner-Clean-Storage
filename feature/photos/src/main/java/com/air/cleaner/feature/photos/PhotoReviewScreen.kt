@@ -150,12 +150,15 @@ fun PhotoReviewScreen(
         val session = previewGroup?.items?.toPhotoPreviewSession(request.itemId)
         val item = session?.currentItem
         if (previewGroup != null && session != null && item != null) {
-        PhotoPreviewDialog(
+            val keepGuidance = previewGroup.similarScreenshotKeepGuidance(keepStrategy)
+            PhotoPreviewDialog(
                 item = item,
                 detail = item.toPhotoPreviewDetail(
                     isRecommendedKeep = item.id == previewGroup.keepItem(keepStrategy).id,
                     selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
                     itemMatchLabel = itemMatchLabel,
+                    keepReasonLine = keepGuidance.keepReasonLine,
+                    riskLine = keepGuidance.riskLine,
                 ),
                 session = session,
                 onPrevious = {
@@ -168,7 +171,7 @@ fun PhotoReviewScreen(
                     selectionState = selectionState.toggle(item.id)
                 },
                 onDismiss = { previewRequest = null },
-        )
+            )
         }
     }
 }
@@ -768,6 +771,20 @@ private fun PhotoPreviewDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    detail.keepReasonLine?.let { keepReasonLine ->
+                        Text(
+                            text = keepReasonLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    detail.riskLine?.let { riskLine ->
+                        Text(
+                            text = riskLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     Button(onClick = onToggleSelection) {
                         Text(if (detail.selectedForDeletion) "Keep this" else "Select for deletion")
                     }

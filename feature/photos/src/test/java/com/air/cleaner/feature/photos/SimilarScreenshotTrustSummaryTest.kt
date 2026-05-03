@@ -23,9 +23,11 @@ class SimilarScreenshotTrustSummaryTest {
         assertEquals(
             listOf(
                 "Keeps New screenshot.png",
+                "Why keep: newest capture in this group",
                 "Can clean 1 photo | 1 MB",
                 "Confidence: same screen size + visual fingerprint",
                 "Range: captured 4 sec apart",
+                "Risk: low; still review before deleting",
             ),
             summary.lines,
         )
@@ -45,7 +47,7 @@ class SimilarScreenshotTrustSummaryTest {
 
         assertEquals(
             "Range: different sessions; review carefully",
-            summary.lines.last(),
+            summary.lines[4],
         )
     }
 

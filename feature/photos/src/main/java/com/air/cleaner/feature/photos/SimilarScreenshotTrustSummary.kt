@@ -15,6 +15,7 @@ fun DuplicateGroup.similarScreenshotTrustSummary(
     val cleanableItems = items.filterNot { it.id == keepItem.id }
     val cleanableCount = cleanableItems.size
     val cleanablePhotoLabel = if (cleanableCount == 1) "photo" else "photos"
+    val keepGuidance = similarScreenshotKeepGuidance(keepStrategy)
     return SimilarScreenshotTrustSummary(
         title = when (keepStrategy) {
             PhotoReviewKeepStrategy.Newest -> "Suggested keep: newest screenshot"
@@ -22,9 +23,11 @@ fun DuplicateGroup.similarScreenshotTrustSummary(
         },
         lines = listOf(
             "Keeps ${keepItem.displayName}",
+            keepGuidance.keepReasonLine,
             "Can clean $cleanableCount $cleanablePhotoLabel | ${formatTrustBytes(cleanableItems.sumOf { it.sizeBytes })}",
             "Confidence: same screen size + visual fingerprint",
             "Range: ${trustCaptureRangeLabel()}",
+            keepGuidance.riskLine,
         ),
     )
 }
