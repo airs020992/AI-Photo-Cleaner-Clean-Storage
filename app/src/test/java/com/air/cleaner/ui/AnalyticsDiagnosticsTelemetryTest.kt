@@ -376,6 +376,34 @@ class AnalyticsDiagnosticsTelemetryTest {
             ),
         )
     }
+
+    @Test
+    fun diagnosticsReportExplainsHighFingerprintCacheReuseStillOverLatencyTarget() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "screenshot_count" to 119L,
+                    "group_count" to 1L,
+                    "empty_result" to false,
+                    "elapsed_ms" to 4_900L,
+                    "scan_source" to "cold_scan",
+                    "fingerprint_candidate_count" to 38L,
+                    "fingerprint_skipped_count" to 81L,
+                    "fingerprint_cache_hit_count" to 36L,
+                    "fingerprint_cache_miss_count" to 2L,
+                ),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = false)
+
+        assertTrue(
+            report.contains(
+                "Cache: fingerprint cache reused 36/38 candidates; 2 required decoding. Next: reduce fingerprint candidates or review matching work because cache reuse is already healthy but scan still exceeds target.",
+            ),
+        )
+    }
 }
 
 private class RecordingCleanerTelemetry(

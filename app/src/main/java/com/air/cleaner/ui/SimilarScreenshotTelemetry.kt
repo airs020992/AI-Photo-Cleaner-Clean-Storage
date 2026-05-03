@@ -375,6 +375,8 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
             similarScreenshotFingerprintCacheLabels(
                 cacheHitCount = fingerprintCacheHitCount,
                 cacheMissCount = fingerprintCacheMissCount,
+                source = source,
+                elapsedMillis = elapsedMillis,
             ),
         )
         add(
@@ -386,13 +388,19 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
 private fun similarScreenshotFingerprintCacheLabels(
     cacheHitCount: Long,
     cacheMissCount: Long,
+    source: String?,
+    elapsedMillis: Long,
 ): List<String> {
     val lookupCount = cacheHitCount + cacheMissCount
     if (lookupCount <= 0L) return emptyList()
-    val nextStep = if (cacheMissCount > cacheHitCount) {
-        "prioritize persistent fingerprint reuse before threshold tuning"
-    } else {
-        "focus on reducing fingerprint candidates and review quality"
+    val nextStep = when {
+        cacheMissCount > cacheHitCount ->
+            "prioritize persistent fingerprint reuse before threshold tuning"
+        source == SimilarScreenshotScanSource.ColdScan.analyticsValue &&
+            elapsedMillis > SIMILAR_SCREENSHOT_COLD_SCAN_TARGET_MS ->
+            "reduce fingerprint candidates or review matching work because cache reuse is already healthy but scan still exceeds target"
+        else ->
+            "focus on reducing fingerprint candidates and review quality"
     }
     return listOf(
         "Cache: fingerprint cache reused $cacheHitCount/$lookupCount candidates; $cacheMissCount required decoding. Next: $nextStep.",
