@@ -325,6 +325,14 @@ fun AIPhotoCleanerApp() {
                 },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 onPostDeleteAction = { action ->
+                    if (lastDeletedReviewContext == PhotoDeleteReviewContext.SimilarScreenshots && postDeleteStatus != null) {
+                        telemetry.track(
+                            SimilarScreenshotTelemetry.postDeleteAction(
+                                action = action,
+                                status = postDeleteStatus,
+                            ),
+                        )
+                    }
                     lastDeletedSummary = null
                     lastDeletedResult = null
                     lastDeletedReviewContext = null

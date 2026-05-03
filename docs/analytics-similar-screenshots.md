@@ -15,6 +15,7 @@ Analytics is privacy-gated by the in-app Product analytics switch. Firebase coll
 5. `similar_screenshots_continue_tapped`
 6. `similar_screenshots_delete_requested`
 7. `similar_screenshots_system_delete_result`
+8. `similar_screenshots_post_delete_action`
 
 `similar_screenshots_rescan_tapped` measures recovery after empty or stale results.
 
@@ -30,6 +31,7 @@ Analytics is privacy-gated by the in-app Product analytics switch. Firebase coll
 | `similar_screenshots_continue_tapped` | User continues from review toward Android system delete confirmation. | `priority_groups` Long, `selected_bytes` Long, `selected_count` Long, `total_groups` Long |
 | `similar_screenshots_delete_requested` | User confirms the in-app delete dialog and the app attempts to open Android system confirmation. | `missing_access_count` Long, `priority_groups` Long, `selected_bytes` Long, `selected_count` Long, `system_dialog_available` Boolean |
 | `similar_screenshots_system_delete_result` | Android system delete confirmation returns. | `confirmed` Boolean, `priority_groups` Long, `selected_bytes` Long, `selected_count` Long |
+| `similar_screenshots_post_delete_action` | User taps the post-delete result card CTA after Android delete result reconciliation. | `action` String, `has_priority_groups` Boolean, `remaining_groups` Long, `remaining_recoverable_bytes` Long |
 
 ## Health Questions
 
@@ -40,6 +42,7 @@ Analytics is privacy-gated by the in-app Product analytics switch. Firebase coll
 - Trust edits: `selection_changed / review_shown` and action distribution.
 - Commit intent: `continue_tapped / review_shown`.
 - System friction: `delete_requested` with `system_dialog_available=false`, then confirmed vs cancelled `system_delete_result`.
+- Post-delete continuation: `post_delete_action / system_delete_result` and action distribution.
 
 ## Privacy Rules
 

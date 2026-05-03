@@ -5,6 +5,9 @@ import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
 import com.air.cleaner.domain.cleaning.MediaType
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
+import com.air.cleaner.feature.photos.PhotoPostDeleteAction
+import com.air.cleaner.feature.photos.PhotoPostDeleteMetric
+import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,6 +26,7 @@ class SimilarScreenshotTelemetryTest {
                 "similar_screenshots_continue_tapped",
                 "similar_screenshots_delete_requested",
                 "similar_screenshots_system_delete_result",
+                "similar_screenshots_post_delete_action",
             ),
             contracts.map { it.name }.toSet(),
         )
@@ -271,6 +275,33 @@ class SimilarScreenshotTelemetryTest {
                 "priority_groups" to 1,
                 "missing_access_count" to 1,
                 "system_dialog_available" to false,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
+    fun postDeleteActionEventCapturesCleanupContinuationWithoutPhotoIdentity() {
+        val event = SimilarScreenshotTelemetry.postDeleteAction(
+            action = PhotoPostDeleteAction.ReviewPriorityGroups,
+            status = PhotoPostDeleteStatus(
+                title = "8 photos removed",
+                message = "2 priority groups still need review",
+                remainingGroupCount = 4,
+                remainingRecoverableBytes = 4_000L,
+                metrics = listOf(PhotoPostDeleteMetric("Priority remaining", "2 groups")),
+                nextActionLabel = "Review priority groups next",
+                nextAction = PhotoPostDeleteAction.ReviewPriorityGroups,
+            ),
+        )
+
+        assertEquals("similar_screenshots_post_delete_action", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "action" to "review_priority_groups",
+                "remaining_groups" to 4,
+                "remaining_recoverable_bytes" to 4_000L,
+                "has_priority_groups" to true,
             ),
             event.properties,
         )

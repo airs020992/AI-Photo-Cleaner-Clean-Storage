@@ -5,6 +5,8 @@ import android.os.Bundle
 import com.air.cleaner.data.media.MediaScanSummary
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
+import com.air.cleaner.feature.photos.PhotoPostDeleteAction
+import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import com.google.firebase.analytics.FirebaseAnalytics
 
 internal data class CleanerTelemetryEvent(
@@ -136,6 +138,15 @@ internal object SimilarScreenshotAnalyticsContract {
                 AnalyticsParameterContract("priority_groups", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("selected_bytes", AnalyticsParameterType.Long),
                 AnalyticsParameterContract("selected_count", AnalyticsParameterType.Long),
+            ),
+        ),
+        AnalyticsEventContract(
+            name = "similar_screenshots_post_delete_action",
+            parameters = listOf(
+                AnalyticsParameterContract("action", AnalyticsParameterType.String),
+                AnalyticsParameterContract("has_priority_groups", AnalyticsParameterType.Boolean),
+                AnalyticsParameterContract("remaining_groups", AnalyticsParameterType.Long),
+                AnalyticsParameterContract("remaining_recoverable_bytes", AnalyticsParameterType.Long),
             ),
         ),
     )
@@ -330,7 +341,29 @@ internal object SimilarScreenshotTelemetry {
             ),
         )
     }
+
+    fun postDeleteAction(
+        action: PhotoPostDeleteAction,
+        status: PhotoPostDeleteStatus,
+    ): CleanerTelemetryEvent {
+        return CleanerTelemetryEvent(
+            name = "similar_screenshots_post_delete_action",
+            properties = mapOf(
+                "action" to action.analyticsValue,
+                "remaining_groups" to status.remainingGroupCount,
+                "remaining_recoverable_bytes" to status.remainingRecoverableBytes,
+                "has_priority_groups" to (status.nextAction == PhotoPostDeleteAction.ReviewPriorityGroups),
+            ),
+        )
+    }
 }
 
 private val SimilarScreenshotReviewStatus.analyticsValue: String
     get() = name.lowercase()
+
+private val PhotoPostDeleteAction.analyticsValue: String
+    get() = when (this) {
+        PhotoPostDeleteAction.ReturnToPhotos -> "return_to_photos"
+        PhotoPostDeleteAction.ReviewRemainingGroups -> "review_remaining_groups"
+        PhotoPostDeleteAction.ReviewPriorityGroups -> "review_priority_groups"
+    }
