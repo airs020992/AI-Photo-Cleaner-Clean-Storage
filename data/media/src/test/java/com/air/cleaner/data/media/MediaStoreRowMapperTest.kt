@@ -15,6 +15,8 @@ class MediaStoreRowMapperTest {
             dateTakenMillis = 1_700_000_000_000L,
             dateModifiedSeconds = 1_600_000_000L,
             relativePath = "DCIM/Camera/",
+            width = 1440,
+            height = 3120,
         )
 
         val item = MediaStoreRowMapper.map(row, MediaType.Image)
@@ -24,6 +26,8 @@ class MediaStoreRowMapperTest {
         assertEquals(2_500_000L, item?.sizeBytes)
         assertEquals(1_700_000_000_000L, item?.dateTakenMillis)
         assertEquals(MediaType.Image, item?.mediaType)
+        assertEquals(1440, item?.width)
+        assertEquals(3120, item?.height)
         assertNull(item?.contentHash)
     }
 
@@ -36,6 +40,8 @@ class MediaStoreRowMapperTest {
             dateTakenMillis = 1_700_000_000_000L,
             dateModifiedSeconds = 1_600_000_000L,
             relativePath = "Movies/",
+            width = 1920,
+            height = 1080,
         )
 
         val item = MediaStoreRowMapper.map(row, MediaType.Video)
@@ -52,6 +58,8 @@ class MediaStoreRowMapperTest {
             dateTakenMillis = null,
             dateModifiedSeconds = 1_600_000_123L,
             relativePath = "Movies/",
+            width = null,
+            height = null,
         )
 
         val item = MediaStoreRowMapper.map(row, MediaType.Video)
@@ -68,6 +76,8 @@ class MediaStoreRowMapperTest {
             dateTakenMillis = null,
             dateModifiedSeconds = null,
             relativePath = null,
+            width = null,
+            height = null,
         )
         val emptyFile = missingName.copy(displayName = "empty.jpg", sizeBytes = 0L)
 

@@ -7,4 +7,6 @@ data class MediaStoreRow(
     val dateTakenMillis: Long?,
     val dateModifiedSeconds: Long?,
     val relativePath: String?,
+    val width: Int?,
+    val height: Int?,
 )

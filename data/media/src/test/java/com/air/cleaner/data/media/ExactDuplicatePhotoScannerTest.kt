@@ -52,6 +52,26 @@ class ExactDuplicatePhotoScannerTest {
     }
 
     @Test
+    fun comparesImagesWithSameDimensionsEvenWhenFileSizesDiffer() {
+        val requestedKeys = mutableListOf<String>()
+        val scanner = ExactDuplicatePhotoScanner(
+            contentFingerprint = { key ->
+                requestedKeys += key
+                "same-pixels"
+            },
+        )
+        val candidates = listOf(
+            candidate("1", "uri-a", sizeBytes = 1_912_800L, width = 1440, height = 3120),
+            candidate("2", "uri-b", sizeBytes = 1_912_759L, width = 1440, height = 3120),
+        )
+
+        val groups = scanner.findDuplicateGroups(candidates)
+
+        assertEquals(listOf("uri-a", "uri-b"), requestedKeys.sorted())
+        assertEquals(listOf("1", "2"), groups.single().items.map { it.id }.sorted())
+    }
+
+    @Test
     fun keepsOriginalContentUriForThumbnailRendering() {
         val scanner = ExactDuplicatePhotoScanner(
             contentFingerprint = { "same-hash" },
@@ -73,6 +93,8 @@ class ExactDuplicatePhotoScannerTest {
         id: String,
         contentKey: String,
         sizeBytes: Long,
+        width: Int? = null,
+        height: Int? = null,
     ): DuplicatePhotoCandidate {
         return DuplicatePhotoCandidate(
             item = MediaItem(
@@ -83,6 +105,8 @@ class ExactDuplicatePhotoScannerTest {
                 contentHash = null,
                 mediaType = MediaType.Image,
                 contentUri = contentKey,
+                width = width,
+                height = height,
             ),
             contentKey = contentKey,
         )

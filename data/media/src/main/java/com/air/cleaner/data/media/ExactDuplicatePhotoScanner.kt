@@ -14,7 +14,7 @@ class ExactDuplicatePhotoScanner(
 ) {
     fun findDuplicateGroups(candidates: List<DuplicatePhotoCandidate>): List<DuplicateGroup> {
         val fingerprintedItems = candidates
-            .groupBy { it.item.sizeBytes }
+            .groupBy { it.prefilterKey() }
             .filterValues { it.size > 1 }
             .values
             .flatten()
@@ -25,5 +25,15 @@ class ExactDuplicatePhotoScanner(
             }
 
         return DuplicatePhotoDetector().findDuplicates(fingerprintedItems)
+    }
+
+    private fun DuplicatePhotoCandidate.prefilterKey(): String {
+        val width = item.width
+        val height = item.height
+        return if (width != null && height != null) {
+            "dimensions:$width:$height"
+        } else {
+            "size:${item.sizeBytes}"
+        }
     }
 }

@@ -16,4 +16,18 @@ class ImageContentFingerprinterTest {
             fingerprint,
         )
     }
+
+    @Test
+    fun createsStableSha256FingerprintFromDecodedPixels() {
+        val fingerprint = ImageContentFingerprinter.sha256Pixels(
+            width = 2,
+            height = 1,
+            argbPixels = intArrayOf(0xFFFF0000.toInt(), 0xFF00FF00.toInt()),
+        )
+
+        assertEquals(
+            "827e1b4c22cf15eb7d6c1f141695555c8e34bf05715ab73f9b3206b24eb800dd",
+            fingerprint,
+        )
+    }
 }

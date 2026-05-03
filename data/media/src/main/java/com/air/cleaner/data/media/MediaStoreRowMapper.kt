@@ -19,6 +19,8 @@ object MediaStoreRowMapper {
             dateTakenMillis = dateMillis,
             contentHash = null,
             mediaType = mediaType,
+            width = row.width?.takeIf { it > 0 },
+            height = row.height?.takeIf { it > 0 },
         )
     }
 

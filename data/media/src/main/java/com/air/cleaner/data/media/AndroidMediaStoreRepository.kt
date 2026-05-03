@@ -38,7 +38,7 @@ class AndroidMediaStoreRepository(
             contentFingerprint = { contentKey ->
                 runCatching {
                     contentResolver.openInputStream(Uri.parse(contentKey))?.use { inputStream ->
-                        ImageContentFingerprinter.sha256(inputStream)
+                        ImageContentFingerprinter.sha256DecodedPixels(inputStream)
                     }
                 }.getOrNull()
             },
@@ -110,6 +110,8 @@ class AndroidMediaStoreRepository(
             add(MediaStore.MediaColumns.SIZE)
             add(MediaStore.MediaColumns.DATE_MODIFIED)
             add(MediaStore.MediaColumns.DATE_TAKEN)
+            add(MediaStore.MediaColumns.WIDTH)
+            add(MediaStore.MediaColumns.HEIGHT)
             if (Build.VERSION.SDK_INT >= 29) {
                 add(MediaStore.MediaColumns.RELATIVE_PATH)
             }
@@ -128,6 +130,8 @@ class AndroidMediaStoreRepository(
             } else {
                 null
             },
+            width = getOptionalInt(MediaStore.MediaColumns.WIDTH),
+            height = getOptionalInt(MediaStore.MediaColumns.HEIGHT),
         )
     }
 
@@ -138,6 +142,11 @@ class AndroidMediaStoreRepository(
     private fun Cursor.getOptionalLong(columnName: String): Long? {
         val index = getColumnIndex(columnName)
         return if (index >= 0 && !isNull(index)) getLong(index) else null
+    }
+
+    private fun Cursor.getOptionalInt(columnName: String): Int? {
+        val index = getColumnIndex(columnName)
+        return if (index >= 0 && !isNull(index)) getInt(index) else null
     }
 
     private fun Cursor.getOptionalString(columnName: String): String? {
