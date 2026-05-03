@@ -37,6 +37,40 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun safeTelemetryDropsUnknownAndSensitiveFieldsBeforeForwarding() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = SafeCleanerTelemetry(delegate = recordingTelemetry)
+        val event = CleanerTelemetryEvent(
+            name = "similar_screenshots_scan_completed",
+            properties = mapOf(
+                "elapsed_ms" to 800L,
+                "status" to "fresh",
+                "empty_result" to false,
+                "content_uri" to "content://images/private",
+                "display_name" to "bank-statement.png",
+                "content_hash" to "abc123",
+                "unexpected" to "drop-me",
+            ),
+        )
+
+        telemetry.track(event)
+
+        assertEquals(
+            listOf(
+                CleanerTelemetryEvent(
+                    name = "similar_screenshots_scan_completed",
+                    properties = mapOf<String, Any>(
+                        "elapsed_ms" to 800L,
+                        "status" to "fresh",
+                        "empty_result" to false,
+                    ),
+                ),
+            ),
+            recordingTelemetry.events,
+        )
+    }
+
+    @Test
     fun scanCompletedEventCapturesLatencyAndResultQuality() {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,

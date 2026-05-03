@@ -29,11 +29,39 @@ internal class ConsentAwareCleanerTelemetry(
     }
 }
 
+internal class SafeCleanerTelemetry(
+    private val delegate: CleanerTelemetry,
+) : CleanerTelemetry {
+    override fun track(event: CleanerTelemetryEvent) {
+        delegate.track(
+            event.copy(
+                properties = event.properties.filterKeys { it in SAFE_ANALYTICS_PROPERTIES },
+            ),
+        )
+    }
+}
+
 internal class LogcatCleanerTelemetry : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
         Log.d("AIPhotoCleaner", "${event.name} ${event.properties}")
     }
 }
+
+private val SAFE_ANALYTICS_PROPERTIES = setOf(
+    "confirmed",
+    "current_group_count",
+    "elapsed_ms",
+    "empty_result",
+    "group_count",
+    "groups_loaded",
+    "priority_groups",
+    "recoverable_bytes",
+    "screenshot_count",
+    "selected_bytes",
+    "selected_count",
+    "status",
+    "total_groups",
+)
 
 internal object SimilarScreenshotTelemetry {
     fun entryTapped(

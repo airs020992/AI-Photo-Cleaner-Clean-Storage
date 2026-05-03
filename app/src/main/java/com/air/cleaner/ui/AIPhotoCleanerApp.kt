@@ -119,7 +119,7 @@ fun AIPhotoCleanerApp() {
             }
             val telemetry = remember {
                 ConsentAwareCleanerTelemetry(
-                    delegate = LogcatCleanerTelemetry(),
+                    delegate = SafeCleanerTelemetry(LogcatCleanerTelemetry()),
                     analyticsEnabled = { analyticsEnabled },
                 )
             }
