@@ -65,6 +65,9 @@ fun PhotoReviewScreen(
     var selectionState by remember(groups, keepStrategy) {
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups, keepStrategy))
     }
+    var previewItem by remember(groups) {
+        mutableStateOf<MediaItem?>(null)
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -121,6 +124,9 @@ fun PhotoReviewScreen(
                         matchExplanation = groupMatchExplanation?.invoke(group),
                         trustSummary = groupTrustSummary?.invoke(group),
                         keepStrategy = keepStrategy,
+                        onPreviewItem = { item ->
+                            previewItem = item
+                        },
                     )
                 }
             }
@@ -133,6 +139,19 @@ fun PhotoReviewScreen(
             onBack = onBack,
             onContinue = { onContinue(selectionState) },
             modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+
+    previewItem?.let { item ->
+        val previewGroup = groups.firstOrNull { group -> group.items.any { groupItem -> groupItem.id == item.id } }
+        PhotoPreviewDialog(
+            item = item,
+            detail = item.toPhotoPreviewDetail(
+                isRecommendedKeep = item.id == previewGroup?.keepItem(keepStrategy)?.id,
+                selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
+                itemMatchLabel = itemMatchLabel,
+            ),
+            onDismiss = { previewItem = null },
         )
     }
 }
@@ -477,6 +496,7 @@ private fun DuplicateGroupCard(
     matchExplanation: String? = null,
     trustSummary: SimilarScreenshotTrustSummary? = null,
     keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
+    onPreviewItem: (MediaItem) -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -536,6 +556,7 @@ private fun DuplicateGroupCard(
             PhotoReviewPreviewStrip(
                 items = selectionState.previewItemsInGroup(group.key),
                 extraCount = (group.items.size - 4).coerceAtLeast(0),
+                onPreviewItem = onPreviewItem,
             )
             val keepItem = group.keepItem(keepStrategy)
             group.items.sortedByDescending { it.dateTakenMillis }.forEach { item ->
@@ -586,6 +607,7 @@ private fun PhotoReviewPreviewStrip(
     items: List<MediaItem>,
     extraCount: Int,
     modifier: Modifier = Modifier,
+    onPreviewItem: (MediaItem) -> Unit = {},
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -597,7 +619,8 @@ private fun PhotoReviewPreviewStrip(
                     .weight(1f)
                     .height(72.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable { onPreviewItem(item) },
                 contentAlignment = Alignment.Center,
             ) {
                 if (item.contentUri != null) {
@@ -633,6 +656,78 @@ private fun PhotoReviewPreviewStrip(
             }
         }
     }
+}
+
+@Composable
+private fun PhotoPreviewDialog(
+    item: MediaItem,
+    detail: PhotoPreviewDetail,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        modifier = modifier,
+        onDismissRequest = onDismiss,
+        title = {
+            Text(detail.title)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(320.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (item.contentUri != null) {
+                        AsyncImage(
+                            model = item.contentUri,
+                            contentDescription = detail.fileLine,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    } else {
+                        Text(
+                            text = item.displayName.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = detail.fileLine,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = detail.roleLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = detail.statusLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = detail.metadataLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+    )
 }
 
 @Composable
