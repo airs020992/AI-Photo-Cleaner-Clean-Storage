@@ -30,4 +30,24 @@ class ImageContentFingerprinterTest {
             fingerprint,
         )
     }
+
+    @Test
+    fun createsStableAverageHashFromLumaSamples() {
+        val fingerprint = ImageContentFingerprinter.averageHashFromLuma(
+            luma = intArrayOf(
+                0, 64,
+                128, 255,
+            ),
+        )
+
+        assertEquals("3", fingerprint)
+    }
+
+    @Test
+    fun countsAverageHashBitDistance() {
+        assertEquals(
+            2,
+            ImageContentFingerprinter.hammingDistance("0f", "05"),
+        )
+    }
 }

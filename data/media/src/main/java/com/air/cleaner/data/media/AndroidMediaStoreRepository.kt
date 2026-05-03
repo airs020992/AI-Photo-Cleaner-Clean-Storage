@@ -43,13 +43,30 @@ class AndroidMediaStoreRepository(
                 }.getOrNull()
             },
         ).findDuplicateGroups(
-            scanItems(
-                uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                mediaType = MediaType.Image,
-            ).map { itemWithPath ->
+            scanImageItems().map { itemWithPath ->
                 DuplicatePhotoCandidate(
                     item = itemWithPath.item,
                     contentKey = itemWithPath.contentUri.toString(),
+                )
+            },
+        )
+    }
+
+    override suspend fun scanSimilarScreenshotGroups(): List<DuplicateGroup> = withContext(Dispatchers.IO) {
+        SimilarScreenshotScanner(
+            perceptualFingerprint = { contentKey ->
+                runCatching {
+                    contentResolver.openInputStream(Uri.parse(contentKey))?.use { inputStream ->
+                        ImageContentFingerprinter.averageHash(inputStream)
+                    }
+                }.getOrNull()
+            },
+        ).findSimilarGroups(
+            scanImageItems().map { itemWithPath ->
+                SimilarScreenshotCandidate(
+                    item = itemWithPath.item,
+                    contentKey = itemWithPath.contentUri.toString(),
+                    relativePath = itemWithPath.relativePath,
                 )
             },
         )
@@ -59,6 +76,20 @@ class AndroidMediaStoreRepository(
         ContentUriPresenceVerifier(
             exists = { contentUri -> contentUriExists(contentUri) },
         ).stillPresent(contentUris)
+    }
+
+    private fun scanImageItems(): List<MediaItemWithPath> {
+        return scanItems(
+            uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            mediaType = MediaType.Image,
+        )
+    }
+
+    private fun scanVideoItems(): List<MediaItemWithPath> {
+        return scanItems(
+            uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            mediaType = MediaType.Video,
+        )
     }
 
     private fun contentUriExists(contentUri: String): Boolean {

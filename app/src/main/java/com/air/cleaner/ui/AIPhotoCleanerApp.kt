@@ -106,6 +106,7 @@ fun AIPhotoCleanerApp() {
         if (permissionState.canScanAnyMedia) {
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
+            var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var navigationState by remember { mutableStateOf(AppNavigationState()) }
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
@@ -137,24 +138,28 @@ fun AIPhotoCleanerApp() {
                     val repository = AndroidMediaStoreRepository(context.contentResolver)
                     val summary = repository.scanSummary()
                     val duplicateGroups = repository.scanDuplicatePhotoGroups()
+                    val similarGroups = repository.scanSimilarScreenshotGroups()
                     val stillExistingDeletedUris = lastDeletedSummary
                         ?.takeIf { lastDeletedResult?.shouldRefreshScan == true }
                         ?.let { deleteSummary ->
                             repository.contentUrisStillPresent(deleteSummary.contentUris)
                         }
-                    Triple(summary, duplicateGroups, stillExistingDeletedUris)
+                    MediaScanResult(summary, duplicateGroups, similarGroups, stillExistingDeletedUris)
                 }
-                scanSummary = scanResult.first
-                duplicatePhotoGroups = scanResult.second
-                lastStillExistingDeletedUris = scanResult.third
+                scanSummary = scanResult.summary
+                duplicatePhotoGroups = scanResult.duplicatePhotoGroups
+                similarScreenshotGroups = scanResult.similarScreenshotGroups
+                lastStillExistingDeletedUris = scanResult.stillExistingDeletedUris
             }
 
             MainAppShell(
                 navigationState = navigationState,
                 scanSummary = scanSummary,
                 duplicatePhotoGroups = duplicatePhotoGroups,
+                similarScreenshotGroups = similarScreenshotGroups,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = { navigationState = navigationState.openDuplicatePhotos() },
+                onOpenSimilarScreenshots = { navigationState = navigationState.openSimilarScreenshots() },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
@@ -195,8 +200,10 @@ private fun MainAppShell(
     navigationState: AppNavigationState,
     scanSummary: MediaScanSummary?,
     duplicatePhotoGroups: List<DuplicateGroup>?,
+    similarScreenshotGroups: List<DuplicateGroup>?,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
+    onOpenSimilarScreenshots: () -> Unit,
     onBackToPhotos: () -> Unit,
     pendingDeleteSummary: PhotoDeletionSummary?,
     deleteResult: PhotoDeletionResult?,
@@ -222,7 +229,9 @@ private fun MainAppShell(
                 tab = screen.tab,
                 scanSummary = scanSummary,
                 duplicatePhotoGroups = duplicatePhotoGroups,
+                similarScreenshotGroups = similarScreenshotGroups,
                 onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+                onOpenSimilarScreenshots = onOpenSimilarScreenshots,
                 contentPadding = padding,
             )
             AppScreen.DuplicatePhotoReview -> Box(modifier = Modifier.padding(padding)) {
@@ -236,6 +245,21 @@ private fun MainAppShell(
                         )
                     },
                     postDeleteStatus = postDeleteStatus,
+                )
+            }
+            AppScreen.SimilarScreenshotReview -> Box(modifier = Modifier.padding(padding)) {
+                PhotoReviewScreen(
+                    title = "Similar screenshots",
+                    groups = similarScreenshotGroups.orEmpty(),
+                    onBack = onBackToPhotos,
+                    onContinue = { selectionState ->
+                        onRequestDeleteConfirmation(
+                            PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                        )
+                    },
+                    emptyTitle = "No similar screenshots found",
+                    emptyMessage = "Small visual differences are grouped only when confidence is high enough. Nothing is deleted automatically.",
+                    itemMatchLabel = "Similar screenshot",
                 )
             }
         }
@@ -260,19 +284,26 @@ private fun TabScreen(
     tab: AppTab,
     scanSummary: MediaScanSummary?,
     duplicatePhotoGroups: List<DuplicateGroup>?,
+    similarScreenshotGroups: List<DuplicateGroup>?,
     onOpenDuplicatePhotos: () -> Unit,
+    onOpenSimilarScreenshots: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     when (tab) {
         AppTab.Clean -> CleanTabScreen(
             scanSummary = scanSummary,
+            duplicatePhotoGroups = duplicatePhotoGroups,
+            similarScreenshotGroups = similarScreenshotGroups,
             onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+            onOpenSimilarScreenshots = onOpenSimilarScreenshots,
             contentPadding = contentPadding,
         )
         AppTab.Photos -> PhotosTabScreen(
             scanSummary = scanSummary,
             duplicatePhotoGroups = duplicatePhotoGroups,
+            similarScreenshotGroups = similarScreenshotGroups,
             onOpenDuplicatePhotos = onOpenDuplicatePhotos,
+            onOpenSimilarScreenshots = onOpenSimilarScreenshots,
             contentPadding = contentPadding,
         )
         AppTab.Videos -> VideosTabScreen(
@@ -286,10 +317,18 @@ private fun TabScreen(
 @Composable
 private fun CleanTabScreen(
     scanSummary: MediaScanSummary?,
+    duplicatePhotoGroups: List<DuplicateGroup>?,
+    similarScreenshotGroups: List<DuplicateGroup>?,
     onOpenDuplicatePhotos: () -> Unit,
+    onOpenSimilarScreenshots: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val categories = scanSummary?.toCleanupCategories() ?: localizedPreviewCleanupCategories()
+    val categories = scanSummary
+        ?.toCleanupCategories(
+            duplicatePhotoGroups = duplicatePhotoGroups,
+            similarScreenshotGroups = similarScreenshotGroups,
+        )
+        ?: localizedPreviewCleanupCategories()
     ScreenColumn(contentPadding = contentPadding) {
         TopHeader(title = "AI Cleaner", action = "Premium")
         StorageHero(
@@ -303,7 +342,11 @@ private fun CleanTabScreen(
                 title = category.title,
                 subtitle = category.subtitle,
                 metric = category.recoverableLabel,
-                onClick = if (category.id == "duplicate_photos") onOpenDuplicatePhotos else null,
+                onClick = when (category.id) {
+                    "duplicate_photos" -> onOpenDuplicatePhotos
+                    "similar_photos" -> onOpenSimilarScreenshots
+                    else -> null
+                },
             )
         }
         TrustStrip()
@@ -314,7 +357,9 @@ private fun CleanTabScreen(
 private fun PhotosTabScreen(
     scanSummary: MediaScanSummary?,
     duplicatePhotoGroups: List<DuplicateGroup>?,
+    similarScreenshotGroups: List<DuplicateGroup>?,
     onOpenDuplicatePhotos: () -> Unit,
+    onOpenSimilarScreenshots: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     ScreenColumn(contentPadding = contentPadding) {
@@ -330,8 +375,9 @@ private fun PhotosTabScreen(
         MetricRow(
             icon = Icons.Rounded.AutoAwesome,
             title = "Similar photos",
-            subtitle = "Repeated moments, bursts, and near-identical shots",
-            metric = scanSummary?.imageBytes.toStorageLabel(),
+            subtitle = "Near-identical screenshots grouped for manual review",
+            metric = similarScreenshotGroups.toDuplicateMetricLabel(),
+            onClick = onOpenSimilarScreenshots,
         )
         MetricRow(
             icon = Icons.Rounded.Shield,
@@ -633,7 +679,10 @@ private fun Long?.toStorageLabel(): String {
 }
 
 @Composable
-private fun MediaScanSummary.toCleanupCategories(): List<CleanupCategory> {
+private fun MediaScanSummary.toCleanupCategories(
+    duplicatePhotoGroups: List<DuplicateGroup>?,
+    similarScreenshotGroups: List<DuplicateGroup>?,
+): List<CleanupCategory> {
     return listOf(
         CleanupCategory(
             id = "large_videos",
@@ -647,7 +696,7 @@ private fun MediaScanSummary.toCleanupCategories(): List<CleanupCategory> {
             id = "similar_photos",
             title = stringResource(com.air.cleaner.feature.dashboard.R.string.category_similar_photos_title),
             subtitle = stringResource(com.air.cleaner.feature.dashboard.R.string.category_similar_photos_subtitle),
-            recoverableLabel = formatBytes(imageBytes),
+            recoverableLabel = similarScreenshotGroups.toDuplicateMetricLabel(),
             actionLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.action_review),
             priority = CleanupPriority.High,
         ),
@@ -663,7 +712,7 @@ private fun MediaScanSummary.toCleanupCategories(): List<CleanupCategory> {
             id = "duplicate_photos",
             title = stringResource(com.air.cleaner.feature.dashboard.R.string.category_duplicate_photos_title),
             subtitle = stringResource(com.air.cleaner.feature.dashboard.R.string.category_duplicate_photos_subtitle),
-            recoverableLabel = formatBytes(0L),
+            recoverableLabel = duplicatePhotoGroups.toDuplicateMetricLabel(),
             actionLabel = stringResource(com.air.cleaner.feature.dashboard.R.string.action_review),
             priority = CleanupPriority.Medium,
         ),
@@ -731,6 +780,13 @@ private fun android.content.Context.createSystemDeleteRequest(contentUris: List<
     ).intentSender
 }
 
+private data class MediaScanResult(
+    val summary: MediaScanSummary,
+    val duplicatePhotoGroups: List<DuplicateGroup>,
+    val similarScreenshotGroups: List<DuplicateGroup>,
+    val stillExistingDeletedUris: List<String>?,
+)
+
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun MainAppShellPreview() {
@@ -746,8 +802,10 @@ private fun MainAppShellPreview() {
                 screenshotBytes = 820_000_000L,
             ),
             duplicatePhotoGroups = emptyList(),
+            similarScreenshotGroups = emptyList(),
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
+            onOpenSimilarScreenshots = {},
             onBackToPhotos = {},
             pendingDeleteSummary = null,
             deleteResult = null,

@@ -50,6 +50,9 @@ fun PhotoReviewScreen(
     onContinue: (PhotoReviewSelectionState) -> Unit,
     modifier: Modifier = Modifier,
     postDeleteStatus: PhotoPostDeleteStatus? = null,
+    emptyTitle: String = "No duplicate photos found",
+    emptyMessage: String = "We only show likely matches for review. Nothing is selected or deleted automatically.",
+    itemMatchLabel: String = "Duplicate",
 ) {
     var selectionState by remember(groups) {
         mutableStateOf(PhotoReviewSelectionState.fromGroups(groups))
@@ -77,7 +80,10 @@ fun PhotoReviewScreen(
         }
 
         if (groups.isEmpty()) {
-            EmptyDuplicateReviewCard()
+            EmptyDuplicateReviewCard(
+                title = emptyTitle,
+                message = emptyMessage,
+            )
         } else {
             groups.forEachIndexed { index, group ->
                 DuplicateGroupCard(
@@ -87,6 +93,7 @@ fun PhotoReviewScreen(
                     onToggle = { itemId ->
                         selectionState = selectionState.toggle(itemId)
                     },
+                    itemMatchLabel = itemMatchLabel,
                 )
             }
         }
@@ -252,7 +259,11 @@ fun PhotoDeleteResultDialog(
 }
 
 @Composable
-private fun EmptyDuplicateReviewCard(modifier: Modifier = Modifier) {
+private fun EmptyDuplicateReviewCard(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -264,12 +275,12 @@ private fun EmptyDuplicateReviewCard(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "No duplicate photos found",
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "We only show likely matches for review. Nothing is selected or deleted automatically.",
+                text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -284,6 +295,7 @@ private fun DuplicateGroupCard(
     selectionState: PhotoReviewSelectionState,
     onToggle: (String) -> Unit,
     modifier: Modifier = Modifier,
+    itemMatchLabel: String = "Duplicate",
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -306,6 +318,7 @@ private fun DuplicateGroupCard(
                     isRecommendedKeep = itemIndex == 0,
                     selectedForDeletion = selectionState.isSelectedForDeletion(item.id),
                     onToggle = { onToggle(item.id) },
+                    itemMatchLabel = itemMatchLabel,
                 )
             }
         }
@@ -319,6 +332,7 @@ private fun PhotoReviewRow(
     selectedForDeletion: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    itemMatchLabel: String = "Duplicate",
 ) {
     Row(
         modifier = modifier
@@ -362,7 +376,7 @@ private fun PhotoReviewRow(
                 text = if (isRecommendedKeep) {
                     "Recommended keep | ${formatBytes(item.sizeBytes)}"
                 } else {
-                    "Duplicate | ${formatBytes(item.sizeBytes)}"
+                    "$itemMatchLabel | ${formatBytes(item.sizeBytes)}"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

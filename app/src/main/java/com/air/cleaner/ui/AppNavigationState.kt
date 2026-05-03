@@ -14,6 +14,7 @@ enum class AppTab(val label: String) {
 sealed interface AppScreen {
     data class Tab(val tab: AppTab) : AppScreen
     data object DuplicatePhotoReview : AppScreen
+    data object SimilarScreenshotReview : AppScreen
 }
 
 data class AppNavigationState(
@@ -30,6 +31,13 @@ data class AppNavigationState(
         return copy(
             selectedTab = AppTab.Photos,
             currentScreen = AppScreen.DuplicatePhotoReview,
+        )
+    }
+
+    fun openSimilarScreenshots(): AppNavigationState {
+        return copy(
+            selectedTab = AppTab.Photos,
+            currentScreen = AppScreen.SimilarScreenshotReview,
         )
     }
 }

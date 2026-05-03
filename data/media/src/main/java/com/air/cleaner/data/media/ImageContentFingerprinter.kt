@@ -1,6 +1,7 @@
 package com.air.cleaner.data.media
 
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -56,4 +57,60 @@ object ImageContentFingerprinter {
             "%02x".format(byte)
         }
     }
+
+    fun averageHash(inputStream: InputStream): String? {
+        val bitmap = BitmapFactory.decodeStream(inputStream) ?: return null
+        return try {
+            val scaled = Bitmap.createScaledBitmap(bitmap, AVERAGE_HASH_SIZE, AVERAGE_HASH_SIZE, true)
+            try {
+                val luma = IntArray(AVERAGE_HASH_SIZE * AVERAGE_HASH_SIZE)
+                val pixels = IntArray(AVERAGE_HASH_SIZE * AVERAGE_HASH_SIZE)
+                scaled.getPixels(pixels, 0, AVERAGE_HASH_SIZE, 0, 0, AVERAGE_HASH_SIZE, AVERAGE_HASH_SIZE)
+                pixels.forEachIndexed { index, pixel ->
+                    val red = pixel shr 16 and 0xff
+                    val green = pixel shr 8 and 0xff
+                    val blue = pixel and 0xff
+                    luma[index] = (red * 299 + green * 587 + blue * 114) / 1000
+                }
+                averageHashFromLuma(luma)
+            } finally {
+                scaled.recycle()
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    fun averageHashFromLuma(luma: IntArray): String {
+        if (luma.isEmpty()) return ""
+        val average = luma.average()
+        val bits = StringBuilder()
+        var currentNibble = 0
+        luma.forEachIndexed { index, value ->
+            currentNibble = currentNibble shl 1
+            if (value >= average) {
+                currentNibble = currentNibble or 1
+            }
+            if ((index + 1) % 4 == 0) {
+                bits.append(currentNibble.toString(16))
+                currentNibble = 0
+            }
+        }
+        val remainder = luma.size % 4
+        if (remainder != 0) {
+            bits.append((currentNibble shl (4 - remainder)).toString(16))
+        }
+        return bits.toString()
+    }
+
+    fun hammingDistance(left: String, right: String): Int {
+        if (left.length != right.length) return Int.MAX_VALUE
+        return left.zip(right).sumOf { (leftChar, rightChar) ->
+            val leftValue = leftChar.digitToIntOrNull(16) ?: return Int.MAX_VALUE
+            val rightValue = rightChar.digitToIntOrNull(16) ?: return Int.MAX_VALUE
+            Integer.bitCount(leftValue xor rightValue)
+        }
+    }
+
+    private const val AVERAGE_HASH_SIZE = 16
 }
