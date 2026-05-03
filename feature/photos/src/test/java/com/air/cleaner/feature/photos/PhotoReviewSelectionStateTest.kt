@@ -234,6 +234,26 @@ class PhotoReviewSelectionStateTest {
         assertEquals(1_000L, state.selectedBytes)
     }
 
+    @Test
+    fun similarScreenshotsDefaultToActionableSuggestedDeletionForReviewGroups() {
+        val state = PhotoReviewSelectionState.fromSimilarScreenshotGroups(
+            groups = listOf(
+                duplicateGroup(
+                    mediaItem("older-screenshot", 3_000L, 100L),
+                    mediaItem("newest-screenshot", 2_000L, 200L),
+                    key = "priority",
+                ),
+            ),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertTrue(state.isSelectedForDeletion("older-screenshot"))
+        assertFalse(state.isSelectedForDeletion("newest-screenshot"))
+        assertEquals(1, state.selectedCount)
+        assertEquals(3_000L, state.selectedBytes)
+        assertTrue(state.canContinue)
+    }
+
     private fun duplicateGroup(
         vararg items: MediaItem,
         key: String = "group",

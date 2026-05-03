@@ -77,11 +77,18 @@ fun PhotoReviewScreen(
     }
     var selectionState by remember(groups, keepStrategy) {
         mutableStateOf(
-            PhotoReviewSelectionState.fromGroups(
-                groups = groups,
-                keepStrategy = keepStrategy,
-                protectedGroupKeys = initialReviewWorkflow?.needsReviewGroupKeys.orEmpty(),
-            ),
+            if (usesSimilarScreenshotWorkflow) {
+                PhotoReviewSelectionState.fromSimilarScreenshotGroups(
+                    groups = groups,
+                    keepStrategy = keepStrategy,
+                )
+            } else {
+                PhotoReviewSelectionState.fromGroups(
+                    groups = groups,
+                    keepStrategy = keepStrategy,
+                    protectedGroupKeys = initialReviewWorkflow?.needsReviewGroupKeys.orEmpty(),
+                )
+            },
         )
     }
     var previewRequest by remember(groups) {
@@ -276,12 +283,12 @@ private fun SimilarScreenshotReviewFilterBar(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "${workflow.totalGroupsLabel} scanned | ${workflow.normalGroupsLabel} preselected",
+                    text = "${workflow.totalGroupsLabel} scanned | ${workflow.normalGroupsLabel} lower risk",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "Showing ${workflow.activeFilterLabel} | priority groups require manual Suggested",
+                    text = "Showing ${workflow.activeFilterLabel} | verify the keep item before Continue",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )

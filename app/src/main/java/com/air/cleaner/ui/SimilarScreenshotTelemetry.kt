@@ -240,6 +240,7 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsReport(analyticsE
         add(summary.similarFunnelProgressLabel)
         add(summary.similarFunnelNextStepLabel)
         addAll(summary.similarScanInsightLabels)
+        addAll(toSimilarScreenshotReviewInsightLabels())
         add(summary.latestEventLabel)
         add("Recent events:")
         addAll(recentEventLines)
@@ -317,6 +318,26 @@ private fun List<CleanerTelemetryEvent>.toSimilarScreenshotScanInsightLabels(): 
     }
     return listOf(
         "Similar photos scan: screenshots=$screenshotCount, groups=$groupCount, empty=$emptyResult, elapsed_ms=$elapsedMillis.",
+        diagnosis,
+    )
+}
+
+private fun List<CleanerTelemetryEvent>.toSimilarScreenshotReviewInsightLabels(): List<String> {
+    val reviewShown = firstOrNull { it.name == "similar_screenshots_review_shown" }
+        ?: return emptyList()
+    val groupCount = reviewShown.properties["group_count"].asLongOrZero()
+    val selectedCount = reviewShown.properties["selected_count"].asLongOrZero()
+    val selectedBytes = reviewShown.properties["selected_bytes"].asLongOrZero()
+    val diagnosis = when {
+        groupCount > 0L && selectedCount == 0L ->
+            "Diagnosis: similar groups were found, but no deletion candidates are selected. Next: tap Suggested or select candidates before Continue."
+        groupCount > 0L ->
+            "Diagnosis: review is actionable. Next: tap Continue and confirm Android's delete dialog."
+        else ->
+            "Diagnosis: review opened with no groups. Next: rescan or verify the scan result."
+    }
+    return listOf(
+        "Similar photos review: groups=$groupCount, selected=$selectedCount, selected_bytes=$selectedBytes.",
         diagnosis,
     )
 }

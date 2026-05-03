@@ -97,6 +97,17 @@ data class PhotoReviewSelectionState(
                 .toSet()
             return PhotoReviewSelectionState(groups = groups, selectedIds = selectedIds)
         }
+
+        fun fromSimilarScreenshotGroups(
+            groups: List<DuplicateGroup>,
+            keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Newest,
+        ): PhotoReviewSelectionState {
+            return fromGroups(
+                groups = groups,
+                keepStrategy = keepStrategy,
+                protectedGroupKeys = emptySet(),
+            )
+        }
     }
 
     private fun selectedItemsInGroup(groupKey: String): List<MediaItem> {

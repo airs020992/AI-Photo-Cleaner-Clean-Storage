@@ -226,6 +226,52 @@ class AnalyticsDiagnosticsTelemetryTest {
             report,
         )
     }
+
+    @Test
+    fun diagnosticsReportExplainsFoundGroupsWithNoSelection() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_review_shown",
+                properties = mapOf(
+                    "group_count" to 1L,
+                    "priority_groups" to 1L,
+                    "recoverable_bytes" to 5_715_644L,
+                    "selected_bytes" to 0L,
+                    "selected_count" to 0L,
+                    "status" to "fresh",
+                ),
+            ),
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_scan_completed",
+                properties = mapOf(
+                    "screenshot_count" to 119L,
+                    "group_count" to 1L,
+                    "empty_result" to false,
+                    "elapsed_ms" to 6_275L,
+                ),
+            ),
+        )
+
+        val report = events.toAnalyticsDiagnosticsReport(analyticsEnabled = false)
+
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: disabled
+            Similar photos funnel: 2/8
+            Next: adjust selection or tap Continue.
+            Similar photos scan: screenshots=119, groups=1, empty=false, elapsed_ms=6275.
+            Diagnosis: similar groups were found. Next: review selection quality and deletion confirmation.
+            Similar photos review: groups=1, selected=0, selected_bytes=0.
+            Diagnosis: similar groups were found, but no deletion candidates are selected. Next: tap Suggested or select candidates before Continue.
+            Last local event: similar_screenshots_review_shown
+            Recent events:
+            1. similar_screenshots_review_shown | group_count=1, priority_groups=1, recoverable_bytes=5715644, selected_bytes=0, selected_count=0, status=fresh
+            2. similar_screenshots_scan_completed | elapsed_ms=6275, empty_result=false, group_count=1, screenshot_count=119
+            """.trimIndent(),
+            report,
+        )
+    }
 }
 
 private class RecordingCleanerTelemetry(
