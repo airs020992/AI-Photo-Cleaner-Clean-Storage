@@ -68,6 +68,19 @@ fun PhotoReviewScreen(
     var previewRequest by remember(groups) {
         mutableStateOf<PhotoPreviewRequest?>(null)
     }
+    val usesSimilarScreenshotWorkflow = groupTrustSummary != null
+    var reviewFilter by remember(groups, usesSimilarScreenshotWorkflow) {
+        mutableStateOf(SimilarScreenshotReviewFilter.All)
+    }
+    val reviewWorkflow = if (usesSimilarScreenshotWorkflow) {
+        groups.toSimilarScreenshotReviewWorkflow(
+            keepStrategy = keepStrategy,
+            filter = reviewFilter,
+        )
+    } else {
+        null
+    }
+    val visibleGroups = reviewWorkflow?.groups ?: groups
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -106,31 +119,47 @@ fun PhotoReviewScreen(
                     onAction = onEmptyAction,
                 )
             } else {
-                groups.forEachIndexed { index, group ->
-                    DuplicateGroupCard(
-                        groupIndex = index + 1,
-                        group = group,
-                        selectionState = selectionState,
-                        onToggle = { itemId ->
-                            selectionState = selectionState.toggle(itemId)
-                        },
-                        onDeselectGroup = {
-                            selectionState = selectionState.deselectGroup(group.key)
-                        },
-                        onResetGroup = {
-                            selectionState = selectionState.resetGroup(group.key, keepStrategy)
-                        },
-                        itemMatchLabel = itemMatchLabel,
-                        matchExplanation = groupMatchExplanation?.invoke(group),
-                        trustSummary = groupTrustSummary?.invoke(group),
-                        keepStrategy = keepStrategy,
-                        onPreviewItem = { item ->
-                            previewRequest = PhotoPreviewRequest(
-                                groupKey = group.key,
-                                itemId = item.id,
-                            )
-                        },
+                reviewWorkflow?.let { workflow ->
+                    SimilarScreenshotReviewFilterBar(
+                        workflow = workflow,
+                        selectedFilter = reviewFilter,
+                        onFilterChange = { reviewFilter = it },
                     )
+                }
+                if (visibleGroups.isEmpty()) {
+                    EmptyDuplicateReviewCard(
+                        title = "No priority groups",
+                        message = "All similar screenshot groups are normal priority. Switch back to All to review the full list.",
+                        actionLabel = "Show all",
+                        onAction = { reviewFilter = SimilarScreenshotReviewFilter.All },
+                    )
+                } else {
+                    visibleGroups.forEachIndexed { index, group ->
+                        DuplicateGroupCard(
+                            groupIndex = index + 1,
+                            group = group,
+                            selectionState = selectionState,
+                            onToggle = { itemId ->
+                                selectionState = selectionState.toggle(itemId)
+                            },
+                            onDeselectGroup = {
+                                selectionState = selectionState.deselectGroup(group.key)
+                            },
+                            onResetGroup = {
+                                selectionState = selectionState.resetGroup(group.key, keepStrategy)
+                            },
+                            itemMatchLabel = itemMatchLabel,
+                            matchExplanation = groupMatchExplanation?.invoke(group),
+                            trustSummary = groupTrustSummary?.invoke(group),
+                            keepStrategy = keepStrategy,
+                            onPreviewItem = { item ->
+                                previewRequest = PhotoPreviewRequest(
+                                    groupKey = group.key,
+                                    itemId = item.id,
+                                )
+                            },
+                        )
+                    }
                 }
             }
 
@@ -174,6 +203,91 @@ fun PhotoReviewScreen(
                 onDismiss = { previewRequest = null },
             )
         }
+    }
+}
+
+@Composable
+private fun SimilarScreenshotReviewFilterBar(
+    workflow: SimilarScreenshotReviewWorkflow,
+    selectedFilter: SimilarScreenshotReviewFilter,
+    onFilterChange: (SimilarScreenshotReviewFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.56f),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "${workflow.needsReviewGroupsLabel} | high and medium first",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = "${workflow.totalGroupsLabel} scanned | Showing ${workflow.activeFilterLabel}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SimilarScreenshotReviewFilterButton(
+                    label = SimilarScreenshotReviewFilter.All.label,
+                    selected = selectedFilter == SimilarScreenshotReviewFilter.All,
+                    onClick = { onFilterChange(SimilarScreenshotReviewFilter.All) },
+                    modifier = Modifier.weight(1f),
+                )
+                SimilarScreenshotReviewFilterButton(
+                    label = SimilarScreenshotReviewFilter.NeedsReview.label,
+                    selected = selectedFilter == SimilarScreenshotReviewFilter.NeedsReview,
+                    onClick = { onFilterChange(SimilarScreenshotReviewFilter.NeedsReview) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimilarScreenshotReviewFilterButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = color,
+    ) {
+        Text(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor,
+        )
     }
 }
 

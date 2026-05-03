@@ -7,6 +7,7 @@ data class SimilarScreenshotKeepGuidance(
     val keepReasonLine: String,
     val riskLine: String,
     val reviewPriorityLine: String,
+    val reviewPriority: SimilarScreenshotReviewPriority,
 )
 
 fun DuplicateGroup.similarScreenshotKeepGuidance(
@@ -19,37 +20,47 @@ fun DuplicateGroup.similarScreenshotKeepGuidance(
             PhotoReviewKeepStrategy.Recommended -> "Why keep: highest-quality candidate"
         },
         riskLine = risk.line,
-        reviewPriorityLine = risk.priorityLine,
+        reviewPriorityLine = risk.priority.line,
+        reviewPriority = risk.priority,
     )
+}
+
+enum class SimilarScreenshotReviewPriority(
+    val line: String,
+    val sortOrder: Int,
+) {
+    High(line = "Review priority: high", sortOrder = 0),
+    Medium(line = "Review priority: medium", sortOrder = 1),
+    Normal(line = "Review priority: normal", sortOrder = 2),
 }
 
 private data class SimilarScreenshotRiskAssessment(
     val line: String,
-    val priorityLine: String,
+    val priority: SimilarScreenshotReviewPriority,
 )
 
 private fun DuplicateGroup.riskAssessment(): SimilarScreenshotRiskAssessment {
     if (containsSensitiveScreenshotName()) {
         return SimilarScreenshotRiskAssessment(
             line = "Risk: may contain private or transaction details; review before deleting",
-            priorityLine = "Review priority: high",
+            priority = SimilarScreenshotReviewPriority.High,
         )
     }
     if (captureRangeSeconds() > 60 * 60) {
         return SimilarScreenshotRiskAssessment(
             line = "Risk: captured in different sessions; review before deleting",
-            priorityLine = "Review priority: high",
+            priority = SimilarScreenshotReviewPriority.High,
         )
     }
     if (hasMixedDimensions()) {
         return SimilarScreenshotRiskAssessment(
             line = "Risk: mixed dimensions; compare before deleting",
-            priorityLine = "Review priority: medium",
+            priority = SimilarScreenshotReviewPriority.Medium,
         )
     }
     return SimilarScreenshotRiskAssessment(
         line = "Risk: low; still review before deleting",
-        priorityLine = "Review priority: normal",
+        priority = SimilarScreenshotReviewPriority.Normal,
     )
 }
 
