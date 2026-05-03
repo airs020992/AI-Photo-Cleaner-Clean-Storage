@@ -18,6 +18,17 @@ internal object NoOpCleanerTelemetry : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) = Unit
 }
 
+internal class ConsentAwareCleanerTelemetry(
+    private val delegate: CleanerTelemetry,
+    private val analyticsEnabled: () -> Boolean,
+) : CleanerTelemetry {
+    override fun track(event: CleanerTelemetryEvent) {
+        if (analyticsEnabled()) {
+            delegate.track(event)
+        }
+    }
+}
+
 internal class LogcatCleanerTelemetry : CleanerTelemetry {
     override fun track(event: CleanerTelemetryEvent) {
         Log.d("AIPhotoCleaner", "${event.name} ${event.properties}")

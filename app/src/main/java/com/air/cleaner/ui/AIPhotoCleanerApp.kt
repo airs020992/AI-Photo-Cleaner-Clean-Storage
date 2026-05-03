@@ -2,6 +2,7 @@ package com.air.cleaner.ui
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
@@ -48,6 +49,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -112,7 +114,15 @@ fun AIPhotoCleanerApp() {
         }
 
         if (permissionState.canScanAnyMedia) {
-            val telemetry = remember { LogcatCleanerTelemetry() }
+            var analyticsEnabled by remember {
+                mutableStateOf(context.cleanerPreferences().analyticsEnabled())
+            }
+            val telemetry = remember {
+                ConsentAwareCleanerTelemetry(
+                    delegate = LogcatCleanerTelemetry(),
+                    analyticsEnabled = { analyticsEnabled },
+                )
+            }
             var scanSummary by remember { mutableStateOf<MediaScanSummary?>(null) }
             var duplicatePhotoGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
             var similarScreenshotGroups by remember { mutableStateOf<List<DuplicateGroup>?>(null) }
@@ -259,6 +269,7 @@ fun AIPhotoCleanerApp() {
                 similarScreenshotGroups = similarScreenshotGroups,
                 similarScreenshotReviewStatus = similarScreenshotReviewStatus,
                 telemetry = telemetry,
+                analyticsEnabled = analyticsEnabled,
                 onTabSelected = { navigationState = navigationState.selectTab(it) },
                 onOpenDuplicatePhotos = {
                     navigationState = navigationState.openDuplicatePhotos(
@@ -311,6 +322,13 @@ fun AIPhotoCleanerApp() {
                     }
                 },
                 onDismissDeleteResult = { deleteResult = null },
+                onAnalyticsEnabledChange = { enabled ->
+                    analyticsEnabled = enabled
+                    context.cleanerPreferences()
+                        .edit()
+                        .putBoolean(PREF_ANALYTICS_ENABLED, enabled)
+                        .apply()
+                },
             )
         } else {
             OnboardingScreen(
@@ -332,6 +350,7 @@ private fun MainAppShell(
     similarScreenshotGroups: List<DuplicateGroup>?,
     similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
     telemetry: CleanerTelemetry,
+    analyticsEnabled: Boolean,
     onTabSelected: (AppTab) -> Unit,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
@@ -345,6 +364,7 @@ private fun MainAppShell(
     onDismissDeleteConfirmation: () -> Unit,
     onConfirmDelete: (PhotoDeletionSummary) -> Unit,
     onDismissDeleteResult: () -> Unit,
+    onAnalyticsEnabledChange: (Boolean) -> Unit,
 ) {
     Scaffold(
         containerColor = Color(0xFFF6F8FA),
@@ -364,8 +384,10 @@ private fun MainAppShell(
                 duplicatePhotoGroups = duplicatePhotoGroups,
                 similarScreenshotGroups = similarScreenshotGroups,
                 similarScreenshotReviewStatus = similarScreenshotReviewStatus,
+                analyticsEnabled = analyticsEnabled,
                 onOpenDuplicatePhotos = onOpenDuplicatePhotos,
                 onOpenSimilarScreenshots = onOpenSimilarScreenshots,
+                onAnalyticsEnabledChange = onAnalyticsEnabledChange,
                 contentPadding = padding,
             )
             AppScreen.DuplicatePhotoReview -> Box(modifier = Modifier.padding(padding)) {
@@ -524,8 +546,10 @@ private fun TabScreen(
     duplicatePhotoGroups: List<DuplicateGroup>?,
     similarScreenshotGroups: List<DuplicateGroup>?,
     similarScreenshotReviewStatus: SimilarScreenshotReviewStatus,
+    analyticsEnabled: Boolean,
     onOpenDuplicatePhotos: () -> Unit,
     onOpenSimilarScreenshots: () -> Unit,
+    onAnalyticsEnabledChange: (Boolean) -> Unit,
     contentPadding: PaddingValues,
 ) {
     when (tab) {
@@ -550,7 +574,11 @@ private fun TabScreen(
             videoBytesLabel = scanSummary?.videoBytes.toStorageLabel(),
             contentPadding = contentPadding,
         )
-        AppTab.Settings -> SettingsTabScreen(contentPadding = contentPadding)
+        AppTab.Settings -> SettingsTabScreen(
+            analyticsEnabled = analyticsEnabled,
+            onAnalyticsEnabledChange = onAnalyticsEnabledChange,
+            contentPadding = contentPadding,
+        )
     }
 }
 
@@ -660,21 +688,53 @@ private fun VideosTabScreen(
 }
 
 @Composable
-private fun SettingsTabScreen(contentPadding: PaddingValues) {
+private fun SettingsTabScreen(
+    analyticsEnabled: Boolean,
+    onAnalyticsEnabledChange: (Boolean) -> Unit,
+    contentPadding: PaddingValues,
+) {
     ScreenColumn(contentPadding = contentPadding) {
         TopHeader(title = "Settings", action = "v0.1")
         PremiumSurface {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.Shield,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text("Trust-first cleanup", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text("No fake booster claims. No deletion without confirmation.", style = MaterialTheme.typography.bodySmall)
                 }
+            }
+        }
+        PremiumSurface {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Product analytics",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "Share anonymous usage signals to improve scan speed and cleanup clarity.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = analyticsEnabled,
+                    onCheckedChange = onAnalyticsEnabledChange,
+                )
             }
         }
         listOf("Language", "Subscription", "Privacy", "Restore purchases", "Scan rules").forEach {
@@ -1055,6 +1115,7 @@ private fun MainAppShellPreview() {
             similarScreenshotGroups = emptyList(),
             similarScreenshotReviewStatus = SimilarScreenshotReviewStatus.Fresh,
             telemetry = NoOpCleanerTelemetry,
+            analyticsEnabled = false,
             onTabSelected = {},
             onOpenDuplicatePhotos = {},
             onOpenSimilarScreenshots = {},
@@ -1068,6 +1129,16 @@ private fun MainAppShellPreview() {
             onDismissDeleteConfirmation = {},
             onConfirmDelete = {},
             onDismissDeleteResult = {},
+            onAnalyticsEnabledChange = {},
         )
     }
+}
+
+private const val CLEANER_PREFS = "ai_photo_cleaner"
+private const val PREF_ANALYTICS_ENABLED = "analytics_enabled"
+
+private fun Context.cleanerPreferences() = getSharedPreferences(CLEANER_PREFS, Context.MODE_PRIVATE)
+
+private fun android.content.SharedPreferences.analyticsEnabled(): Boolean {
+    return getBoolean(PREF_ANALYTICS_ENABLED, false)
 }

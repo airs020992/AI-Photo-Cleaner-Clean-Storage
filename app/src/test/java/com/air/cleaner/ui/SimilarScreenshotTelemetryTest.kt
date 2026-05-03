@@ -10,6 +10,33 @@ import org.junit.Test
 
 class SimilarScreenshotTelemetryTest {
     @Test
+    fun consentAwareTelemetryDropsEventsWhenAnalyticsIsDisabled() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = ConsentAwareCleanerTelemetry(
+            delegate = recordingTelemetry,
+            analyticsEnabled = { false },
+        )
+
+        telemetry.track(CleanerTelemetryEvent(name = "test_event", properties = emptyMap()))
+
+        assertEquals(emptyList<CleanerTelemetryEvent>(), recordingTelemetry.events)
+    }
+
+    @Test
+    fun consentAwareTelemetryForwardsEventsWhenAnalyticsIsEnabled() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = ConsentAwareCleanerTelemetry(
+            delegate = recordingTelemetry,
+            analyticsEnabled = { true },
+        )
+        val event = CleanerTelemetryEvent(name = "test_event", properties = mapOf("count" to 1))
+
+        telemetry.track(event)
+
+        assertEquals(listOf(event), recordingTelemetry.events)
+    }
+
+    @Test
     fun scanCompletedEventCapturesLatencyAndResultQuality() {
         val event = SimilarScreenshotTelemetry.scanCompleted(
             elapsedMillis = 1_240L,
@@ -94,5 +121,13 @@ class SimilarScreenshotTelemetryTest {
                 ),
             ),
         )
+    }
+
+    private class RecordingCleanerTelemetry : CleanerTelemetry {
+        val events = mutableListOf<CleanerTelemetryEvent>()
+
+        override fun track(event: CleanerTelemetryEvent) {
+            events += event
+        }
     }
 }
