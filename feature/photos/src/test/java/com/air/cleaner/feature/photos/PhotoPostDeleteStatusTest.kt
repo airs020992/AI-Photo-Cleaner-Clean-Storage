@@ -62,6 +62,46 @@ class PhotoPostDeleteStatusTest {
         )
     }
 
+    @Test
+    fun summarizesReconciliationWhenSelectedPhotosStillNeedReview() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 2,
+                requestedBytes = 2_000L,
+                resolvedItemCount = 1,
+                stillNeedsReviewCount = 1,
+                stillNeedsReviewUris = listOf("content://images/b"),
+                remainingGroupCount = 1,
+                remainingRecoverableBytes = 1_000L,
+            ),
+        )
+
+        assertEquals("1 photo resolved", status?.title)
+        assertEquals("1 selected photo still appears in duplicate review", status?.message)
+        assertEquals(1, status?.remainingGroupCount)
+        assertEquals(1_000L, status?.remainingRecoverableBytes)
+    }
+
+    @Test
+    fun summarizesReconciliationWhenDuplicateReviewIsClear() {
+        val status = PhotoPostDeleteStatus.from(
+            reconciliation = PhotoDeleteReconciliation(
+                requestedItemCount = 2,
+                requestedBytes = 2_000L,
+                resolvedItemCount = 2,
+                stillNeedsReviewCount = 0,
+                stillNeedsReviewUris = emptyList(),
+                remainingGroupCount = 0,
+                remainingRecoverableBytes = 0L,
+            ),
+        )
+
+        assertEquals("All duplicate photos cleared", status?.title)
+        assertEquals("2 photos no longer appear in duplicate review", status?.message)
+        assertEquals(0, status?.remainingGroupCount)
+        assertEquals(0L, status?.remainingRecoverableBytes)
+    }
+
     private fun duplicateGroup(vararg ids: String): DuplicateGroup {
         return DuplicateGroup(
             key = ids.joinToString(),

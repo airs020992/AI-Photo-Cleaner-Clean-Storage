@@ -9,6 +9,31 @@ data class PhotoPostDeleteStatus(
     val remainingRecoverableBytes: Long,
 ) {
     companion object {
+        fun from(reconciliation: PhotoDeleteReconciliation?): PhotoPostDeleteStatus? {
+            if (reconciliation == null) {
+                return null
+            }
+
+            return PhotoPostDeleteStatus(
+                title = when {
+                    reconciliation.remainingGroupCount == 0 -> "All duplicate photos cleared"
+                    reconciliation.stillNeedsReviewCount > 0 -> "${reconciliation.resolvedItemCount} ${photoNoun(reconciliation.resolvedItemCount)} resolved"
+                    else -> "${reconciliation.resolvedItemCount} ${photoNoun(reconciliation.resolvedItemCount)} removed"
+                },
+                message = when {
+                    reconciliation.remainingGroupCount == 0 -> "${reconciliation.resolvedItemCount} photos no longer appear in duplicate review"
+                    reconciliation.stillNeedsReviewCount > 0 -> "${reconciliation.stillNeedsReviewCount} selected ${if (reconciliation.stillNeedsReviewCount == 1) "photo still appears" else "photos still appear"} in duplicate review"
+                    else -> "${reconciliation.remainingGroupCount} duplicate ${if (reconciliation.remainingGroupCount == 1) "group" else "groups"} still ${if (reconciliation.remainingGroupCount == 1) "needs" else "need"} review"
+                },
+                remainingGroupCount = reconciliation.remainingGroupCount,
+                remainingRecoverableBytes = reconciliation.remainingRecoverableBytes,
+            )
+        }
+
+        private fun photoNoun(count: Int): String {
+            return if (count == 1) "photo" else "photos"
+        }
+
         fun from(
             result: PhotoDeletionResult?,
             currentGroups: List<DuplicateGroup>,

@@ -80,6 +80,7 @@ import com.air.cleaner.feature.dashboard.localizedPreviewCleanupCategories
 import com.air.cleaner.feature.onboarding.OnboardingScreen
 import com.air.cleaner.feature.photos.PhotoDeleteConfirmationDialog
 import com.air.cleaner.feature.photos.PhotoDeleteResultDialog
+import com.air.cleaner.feature.photos.PhotoDeleteReconciliation
 import com.air.cleaner.feature.photos.PhotoDeletionResult
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
 import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
@@ -109,6 +110,7 @@ fun AIPhotoCleanerApp() {
             var pendingDeleteSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
             var deleteResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
             var lastDeletedResult by remember { mutableStateOf<PhotoDeletionResult?>(null) }
+            var lastDeletedSummary by remember { mutableStateOf<PhotoDeletionSummary?>(null) }
             var scanRefreshKey by remember { mutableStateOf(0) }
             val deleteLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.StartIntentSenderForResult(),
@@ -121,6 +123,7 @@ fun AIPhotoCleanerApp() {
                     deleteResult = deletionResult
                     if (deletionResult.shouldRefreshScan) {
                         lastDeletedResult = deletionResult
+                        lastDeletedSummary = summary
                         scanRefreshKey += 1
                     }
                 }
@@ -146,8 +149,11 @@ fun AIPhotoCleanerApp() {
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
                 postDeleteStatus = PhotoPostDeleteStatus.from(
-                    result = lastDeletedResult,
-                    currentGroups = duplicatePhotoGroups.orEmpty(),
+                    reconciliation = PhotoDeleteReconciliation.from(
+                        summary = lastDeletedSummary,
+                        result = lastDeletedResult,
+                        currentGroups = duplicatePhotoGroups.orEmpty(),
+                    ),
                 ),
                 onRequestDeleteConfirmation = { pendingDeleteSummary = it },
                 onDismissDeleteConfirmation = { pendingDeleteSummary = null },
