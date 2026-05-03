@@ -80,4 +80,30 @@ class AnalyticsDiagnosticsTelemetryTest {
             report,
         )
     }
+
+    @Test
+    fun diagnosticsShareContentUsesStableTitleAndReportBody() {
+        val events = listOf(
+            CleanerTelemetryEvent(
+                name = "similar_screenshots_entry_tapped",
+                properties = mapOf("groups_loaded" to false),
+            ),
+        )
+
+        val shareContent = events.toAnalyticsDiagnosticsShareContent(analyticsEnabled = false)
+
+        assertEquals("AI Photo Cleaner diagnostics", shareContent.title)
+        assertEquals(
+            """
+            AI Photo Cleaner diagnostics
+            Product analytics: disabled
+            Similar photos funnel: 1/8
+            Next: wait for the scan to finish.
+            Last local event: similar_screenshots_entry_tapped
+            Recent events:
+            1. similar_screenshots_entry_tapped | groups_loaded=false
+            """.trimIndent(),
+            shareContent.text,
+        )
+    }
 }

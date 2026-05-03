@@ -20,6 +20,11 @@ internal data class AnalyticsDiagnosticsSummary(
     val similarFunnelNextStepLabel: String,
 )
 
+internal data class AnalyticsDiagnosticsShareContent(
+    val title: String,
+    val text: String,
+)
+
 internal interface CleanerTelemetry {
     fun track(event: CleanerTelemetryEvent)
 }
@@ -233,6 +238,15 @@ internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsReport(analyticsE
         add("Recent events:")
         addAll(recentEventLines)
     }.joinToString(separator = "\n")
+}
+
+internal fun List<CleanerTelemetryEvent>.toAnalyticsDiagnosticsShareContent(
+    analyticsEnabled: Boolean,
+): AnalyticsDiagnosticsShareContent {
+    return AnalyticsDiagnosticsShareContent(
+        title = "AI Photo Cleaner diagnostics",
+        text = toAnalyticsDiagnosticsReport(analyticsEnabled = analyticsEnabled),
+    )
 }
 
 private data class SimilarScreenshotDiagnosticsStep(

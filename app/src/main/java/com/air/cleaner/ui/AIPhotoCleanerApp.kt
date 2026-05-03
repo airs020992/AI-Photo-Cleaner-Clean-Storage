@@ -3,6 +3,7 @@ package com.air.cleaner.ui
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
@@ -777,6 +778,7 @@ private fun SettingsTabScreen(
     contentPadding: PaddingValues,
 ) {
     ScreenColumn(contentPadding = contentPadding) {
+        val context = LocalContext.current
         val clipboardManager = LocalClipboardManager.current
         TopHeader(title = "Settings", action = "v0.1")
         PremiumSurface {
@@ -826,6 +828,9 @@ private fun SettingsTabScreen(
             val diagnosticsReport = analyticsDiagnosticsEvents.toAnalyticsDiagnosticsReport(
                 analyticsEnabled = analyticsEnabled,
             )
+            val diagnosticsShareContent = analyticsDiagnosticsEvents.toAnalyticsDiagnosticsShareContent(
+                analyticsEnabled = analyticsEnabled,
+            )
             PremiumSurface {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -863,6 +868,17 @@ private fun SettingsTabScreen(
                         },
                     ) {
                         Text("Copy diagnostics")
+                    }
+                    Button(
+                        onClick = {
+                            val shareIntent = Intent(Intent.ACTION_SEND)
+                                .setType("text/plain")
+                                .putExtra(Intent.EXTRA_SUBJECT, diagnosticsShareContent.title)
+                                .putExtra(Intent.EXTRA_TEXT, diagnosticsShareContent.text)
+                            context.startActivity(Intent.createChooser(shareIntent, diagnosticsShareContent.title))
+                        },
+                    ) {
+                        Text("Share diagnostics")
                     }
                     if (analyticsDiagnosticsEvents.isEmpty()) {
                         Text(
