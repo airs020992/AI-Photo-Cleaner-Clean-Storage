@@ -356,7 +356,11 @@ private fun MainAppShell(
                         onBack = onBackToPhotos,
                         onContinue = { selectionState ->
                             onRequestDeleteConfirmation(
-                                PhotoDeletionSummary.fromItems(selectionState.selectedItems),
+                                PhotoDeletionSummary.fromSimilarScreenshotSelection(
+                                    groups = similarScreenshotGroups,
+                                    selectionState = selectionState,
+                                    keepStrategy = PhotoReviewKeepStrategy.Newest,
+                                ),
                                 PhotoDeleteReviewContext.SimilarScreenshots,
                             )
                         },

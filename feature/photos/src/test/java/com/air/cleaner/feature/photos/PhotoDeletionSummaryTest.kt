@@ -1,5 +1,6 @@
 package com.air.cleaner.feature.photos
 
+import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
 import com.air.cleaner.domain.cleaning.MediaType
 import org.junit.Assert.assertEquals
@@ -50,19 +51,111 @@ class PhotoDeletionSummaryTest {
         assertEquals("1 selected photo is missing Android delete access.", summary.blockedReason)
     }
 
+    @Test
+    fun summarizesSelectedSimilarScreenshotPriorityRiskBeforeSystemDeleteRequest() {
+        val highRiskGroup = duplicateGroup(
+            mediaItem("receipt-keep", 2_000L, "content://images/receipt-keep", "Receipt checkout.png"),
+            mediaItem("receipt-delete", 1_000L, "content://images/receipt-delete", "Receipt checkout copy.png"),
+            key = "high",
+        )
+        val mediumRiskGroup = duplicateGroup(
+            mediaItem("crop-keep", 2_000L, "content://images/crop-keep", "Screenshot crop keep.png", width = 1440),
+            mediaItem("crop-delete", 1_000L, "content://images/crop-delete", "Screenshot crop delete.png", width = 1080),
+            key = "medium",
+        )
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(highRiskGroup, mediumRiskGroup),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        val summary = PhotoDeletionSummary.fromSimilarScreenshotSelection(
+            groups = listOf(highRiskGroup, mediumRiskGroup),
+            selectionState = state,
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertEquals(2, summary.priorityGroupCount)
+        assertEquals(1, summary.highPriorityGroupCount)
+        assertEquals(1, summary.mediumPriorityGroupCount)
+        assertEquals("2 priority groups selected", summary.priorityGroupCountLabel)
+        assertEquals(
+            "Review again: 1 high risk group and 1 medium risk group are selected.",
+            summary.priorityWarningLine,
+        )
+    }
+
+    @Test
+    fun hidesPriorityRiskCopyWhenOnlyNormalSimilarScreenshotGroupsAreSelected() {
+        val normalGroup = duplicateGroup(
+            mediaItem("keep", 2_000L, "content://images/keep", "Screenshot keep.png"),
+            mediaItem("delete", 1_000L, "content://images/delete", "Screenshot delete.png"),
+            key = "normal",
+        )
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(normalGroup),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        val summary = PhotoDeletionSummary.fromSimilarScreenshotSelection(
+            groups = listOf(normalGroup),
+            selectionState = state,
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertEquals(0, summary.priorityGroupCount)
+        assertEquals(null, summary.priorityGroupCountLabel)
+        assertEquals(null, summary.priorityWarningLine)
+    }
+
+    @Test
+    fun omitsZeroCountPriorityTypesFromRiskCopy() {
+        val highRiskGroup = duplicateGroup(
+            mediaItem("receipt-keep", 2_000L, "content://images/receipt-keep", "Receipt checkout.png"),
+            mediaItem("receipt-delete", 1_000L, "content://images/receipt-delete", "Receipt checkout copy.png"),
+            key = "high",
+        )
+        val state = PhotoReviewSelectionState.fromGroups(
+            groups = listOf(highRiskGroup),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        val summary = PhotoDeletionSummary.fromSimilarScreenshotSelection(
+            groups = listOf(highRiskGroup),
+            selectionState = state,
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertEquals(
+            "Review again: 1 high risk group is selected.",
+            summary.priorityWarningLine,
+        )
+    }
+
+    private fun duplicateGroup(
+        vararg items: MediaItem,
+        key: String,
+    ): DuplicateGroup {
+        return DuplicateGroup(key = key, items = items.toList())
+    }
+
     private fun mediaItem(
         id: String,
         sizeBytes: Long,
         contentUri: String?,
+        displayName: String = "$id.jpg",
+        width: Int? = 1440,
+        height: Int? = 3120,
     ): MediaItem {
         return MediaItem(
             id = id,
-            displayName = "$id.jpg",
+            displayName = displayName,
             sizeBytes = sizeBytes,
             dateTakenMillis = 0L,
             contentHash = id,
             mediaType = MediaType.Image,
             contentUri = contentUri,
+            width = width,
+            height = height,
         )
     }
 }

@@ -482,6 +482,12 @@ fun PhotoDeleteConfirmationDialog(
                         modifier = Modifier.weight(1f),
                     )
                 }
+                summary.priorityGroupCountLabel?.let { priorityLabel ->
+                    DeleteConfirmationRiskBlock(
+                        title = priorityLabel,
+                        message = summary.priorityWarningLine.orEmpty(),
+                    )
+                }
                 DeleteConfirmationTrustLine(summary.systemConfirmationLabel)
                 DeleteConfirmationTrustLine(summary.cancelSafetyLabel)
                 summary.blockedReason?.let { reason ->
@@ -512,6 +518,36 @@ fun PhotoDeleteConfirmationDialog(
             }
         },
     )
+}
+
+@Composable
+private fun DeleteConfirmationRiskBlock(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+        }
+    }
 }
 
 @Composable
