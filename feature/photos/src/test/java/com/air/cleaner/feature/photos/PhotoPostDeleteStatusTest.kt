@@ -79,6 +79,7 @@ class PhotoPostDeleteStatusTest {
         assertEquals("1 photo resolved", status?.title)
         assertEquals("1 selected photo still appears in duplicate review", status?.message)
         assertEquals("Review remaining groups", status?.nextActionLabel)
+        assertEquals(PhotoPostDeleteAction.ReviewRemainingGroups, status?.nextAction)
         assertEquals(1, status?.remainingGroupCount)
         assertEquals(1_000L, status?.remainingRecoverableBytes)
     }
@@ -100,6 +101,7 @@ class PhotoPostDeleteStatusTest {
         assertEquals("All duplicate photos cleared", status?.title)
         assertEquals("2 photos no longer appear in duplicate review", status?.message)
         assertEquals("Return to Photos", status?.nextActionLabel)
+        assertEquals(PhotoPostDeleteAction.ReturnToPhotos, status?.nextAction)
         assertEquals(0, status?.remainingGroupCount)
         assertEquals(0L, status?.remainingRecoverableBytes)
     }
@@ -170,6 +172,7 @@ class PhotoPostDeleteStatusTest {
         assertEquals("4 photos removed", status?.title)
         assertEquals("3 duplicate groups still need review", status?.message)
         assertEquals("Review remaining groups", status?.nextActionLabel)
+        assertEquals(PhotoPostDeleteAction.ReviewRemainingGroups, status?.nextAction)
     }
 
     @Test
@@ -191,6 +194,7 @@ class PhotoPostDeleteStatusTest {
         assertEquals("8 photos removed", status?.title)
         assertEquals("2 priority groups still need review", status?.message)
         assertEquals("Review priority groups next", status?.nextActionLabel)
+        assertEquals(PhotoPostDeleteAction.ReviewPriorityGroups, status?.nextAction)
         assertEquals(
             listOf(
                 PhotoPostDeleteMetric("Requested", "8"),

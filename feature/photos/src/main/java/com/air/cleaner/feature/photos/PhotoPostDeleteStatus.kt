@@ -9,6 +9,7 @@ data class PhotoPostDeleteStatus(
     val remainingRecoverableBytes: Long,
     val metrics: List<PhotoPostDeleteMetric> = emptyList(),
     val nextActionLabel: String? = null,
+    val nextAction: PhotoPostDeleteAction? = null,
 ) {
     companion object {
         fun from(reconciliation: PhotoDeleteReconciliation?): PhotoPostDeleteStatus? {
@@ -33,15 +34,16 @@ data class PhotoPostDeleteStatus(
                 remainingGroupCount = reconciliation.remainingGroupCount,
                 remainingRecoverableBytes = reconciliation.remainingRecoverableBytes,
                 metrics = reconciliation.metrics(),
-                nextActionLabel = reconciliation.nextActionLabel(),
+                nextActionLabel = reconciliation.nextAction().label,
+                nextAction = reconciliation.nextAction(),
             )
         }
 
-        private fun PhotoDeleteReconciliation.nextActionLabel(): String {
+        private fun PhotoDeleteReconciliation.nextAction(): PhotoPostDeleteAction {
             return when {
-                remainingPriorityGroupCount > 0 -> "Review priority groups next"
-                remainingGroupCount > 0 -> "Review remaining groups"
-                else -> "Return to Photos"
+                remainingPriorityGroupCount > 0 -> PhotoPostDeleteAction.ReviewPriorityGroups
+                remainingGroupCount > 0 -> PhotoPostDeleteAction.ReviewRemainingGroups
+                else -> PhotoPostDeleteAction.ReturnToPhotos
             }
         }
 
@@ -100,3 +102,9 @@ data class PhotoPostDeleteMetric(
     val label: String,
     val value: String,
 )
+
+enum class PhotoPostDeleteAction(val label: String) {
+    ReturnToPhotos("Return to Photos"),
+    ReviewRemainingGroups("Review remaining groups"),
+    ReviewPriorityGroups("Review priority groups next"),
+}

@@ -92,6 +92,7 @@ import com.air.cleaner.feature.photos.PhotoDeleteResultDialog
 import com.air.cleaner.feature.photos.PhotoDeleteReconciliation
 import com.air.cleaner.feature.photos.PhotoDeletionResult
 import com.air.cleaner.feature.photos.PhotoDeletionSummary
+import com.air.cleaner.feature.photos.PhotoPostDeleteAction
 import com.air.cleaner.feature.photos.PhotoPostDeleteStatus
 import com.air.cleaner.feature.photos.PhotoReviewKeepStrategy
 import com.air.cleaner.feature.photos.PhotoReviewScreen
@@ -323,6 +324,14 @@ fun AIPhotoCleanerApp() {
                     scanRefreshKey += 1
                 },
                 onBackToPhotos = { navigationState = navigationState.selectTab(AppTab.Photos) },
+                onPostDeleteAction = { action ->
+                    lastDeletedSummary = null
+                    lastDeletedResult = null
+                    lastDeletedReviewContext = null
+                    if (action == PhotoPostDeleteAction.ReturnToPhotos) {
+                        navigationState = navigationState.selectTab(AppTab.Photos)
+                    }
+                },
                 pendingDeleteSummary = pendingDeleteSummary,
                 deleteResult = deleteResult,
                 postDeleteStatus = postDeleteStatus,
@@ -390,6 +399,7 @@ private fun MainAppShell(
     onOpenSimilarScreenshots: () -> Unit,
     onRescanSimilarScreenshots: () -> Unit,
     onBackToPhotos: () -> Unit,
+    onPostDeleteAction: (PhotoPostDeleteAction) -> Unit,
     pendingDeleteSummary: PhotoDeletionSummary?,
     deleteResult: PhotoDeletionResult?,
     postDeleteStatus: PhotoPostDeleteStatus?,
@@ -439,6 +449,7 @@ private fun MainAppShell(
                     postDeleteStatus = postDeleteStatus.takeIf {
                         postDeleteReviewContext == PhotoDeleteReviewContext.DuplicatePhotos
                     },
+                    onPostDeleteAction = onPostDeleteAction,
                 )
             }
             AppScreen.SimilarScreenshotReview -> Box(modifier = Modifier.padding(padding)) {
@@ -495,6 +506,7 @@ private fun MainAppShell(
                         postDeleteStatus = postDeleteStatus.takeIf {
                             postDeleteReviewContext == PhotoDeleteReviewContext.SimilarScreenshots
                         },
+                        onPostDeleteAction = onPostDeleteAction,
                         emptyTitle = similarScreenshotReviewStatus.emptyTitle(scanStatus),
                         emptyMessage = similarScreenshotReviewStatus.emptyMessage(scanStatus),
                         emptyActionLabel = similarScreenshotReviewStatus.emptyActionLabel(),
@@ -1230,6 +1242,7 @@ private fun MainAppShellPreview() {
             onOpenSimilarScreenshots = {},
             onRescanSimilarScreenshots = {},
             onBackToPhotos = {},
+            onPostDeleteAction = {},
             pendingDeleteSummary = null,
             deleteResult = null,
             postDeleteStatus = null,

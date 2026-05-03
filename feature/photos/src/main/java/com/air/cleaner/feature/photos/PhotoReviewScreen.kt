@@ -52,6 +52,7 @@ fun PhotoReviewScreen(
     onContinue: (PhotoReviewSelectionState) -> Unit,
     modifier: Modifier = Modifier,
     postDeleteStatus: PhotoPostDeleteStatus? = null,
+    onPostDeleteAction: (PhotoPostDeleteAction) -> Unit = {},
     noticeTitle: String? = null,
     noticeMessage: String? = null,
     emptyTitle: String = "No duplicate photos found",
@@ -123,7 +124,10 @@ fun PhotoReviewScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             postDeleteStatus?.let { status ->
-                PostDeleteStatusCard(status = status)
+                PostDeleteStatusCard(
+                    status = status,
+                    onAction = onPostDeleteAction,
+                )
             }
             if (noticeTitle != null && noticeMessage != null) {
                 ReviewNoticeCard(
@@ -423,6 +427,7 @@ private fun ReviewNoticeCard(
 @Composable
 private fun PostDeleteStatusCard(
     status: PhotoPostDeleteStatus,
+    onAction: (PhotoPostDeleteAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -446,13 +451,10 @@ private fun PostDeleteStatusCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
-            status.nextActionLabel?.let { nextActionLabel ->
-                Text(
-                    text = nextActionLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
+            if (status.nextActionLabel != null && status.nextAction != null) {
+                Button(onClick = { onAction(status.nextAction) }) {
+                    Text(status.nextActionLabel)
+                }
             }
             if (status.metrics.isNotEmpty()) {
                 Row(
