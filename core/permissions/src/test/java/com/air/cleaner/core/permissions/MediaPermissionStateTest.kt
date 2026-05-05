@@ -47,6 +47,12 @@ class MediaPermissionStateTest {
         assertEquals(MediaPermissionAccess.SelectedOnly, state.access)
         assertTrue(state.canScanAnyMedia)
         assertFalse(state.canScanFullLibrary)
+        assertTrue(state.shouldWarnLimitedLibraryAccess)
+        assertEquals("Limited photo access", state.accessNoticeTitle)
+        assertEquals(
+            "Only selected photos are visible. Allow full access to scan the whole library.",
+            state.accessNoticeMessage,
+        )
     }
 
     @Test
@@ -61,5 +67,6 @@ class MediaPermissionStateTest {
 
         assertEquals(MediaPermissionAccess.Full, state.access)
         assertTrue(state.canScanFullLibrary)
+        assertFalse(state.shouldWarnLimitedLibraryAccess)
     }
 }

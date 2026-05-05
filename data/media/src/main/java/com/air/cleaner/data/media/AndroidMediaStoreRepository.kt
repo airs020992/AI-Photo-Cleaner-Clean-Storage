@@ -17,6 +17,7 @@ class AndroidMediaStoreRepository(
     private val contentResolver: ContentResolver,
     private val similarScreenshotFingerprintCache: PerceptualFingerprintCache = InMemoryPerceptualFingerprintCache(),
     private val similarScreenshotResultCache: SimilarScreenshotResultCache = InMemorySimilarScreenshotResultCache(),
+    private val similarPhotoScanScope: SimilarPhotoScanScope = SimilarPhotoScanScope(),
 ) : MediaRepository {
     override suspend fun scanSummary(): MediaScanSummary = withContext(Dispatchers.IO) {
         val accumulator = MediaScanSummaryAccumulator()
@@ -51,6 +52,49 @@ class AndroidMediaStoreRepository(
                     contentKey = itemWithPath.contentUri.toString(),
                 )
             },
+        )
+    }
+
+    override suspend fun scanLargeVideos(): List<MediaItem> = withContext(Dispatchers.IO) {
+        LargeVideoScanner().findLargeVideos(
+            scanVideoItems().map { itemWithPath -> itemWithPath.item },
+        )
+    }
+
+    override suspend fun scanSimilarPhotoGroupResult(): SimilarPhotoScanResult = withContext(Dispatchers.IO) {
+        var fingerprintCacheHitCount = 0
+        var fingerprintCacheMissCount = 0
+        val result = SimilarPhotoScanner(
+            perceptualFingerprint = { candidate ->
+                val cacheResult = similarScreenshotFingerprintCache.getOrPutResult(candidate.fingerprintCacheKey) {
+                    runCatching {
+                        contentResolver.openInputStream(Uri.parse(candidate.contentKey))?.use { inputStream ->
+                            ImageContentFingerprinter.averageHash(inputStream)
+                        }
+                    }.getOrNull()
+                }
+                if (cacheResult.cacheHit) {
+                    fingerprintCacheHitCount += 1
+                } else {
+                    fingerprintCacheMissCount += 1
+                }
+                cacheResult.fingerprint
+            },
+        ).findSimilarGroupResult(
+            scanImageItems().filter { itemWithPath ->
+                similarPhotoScanScope.accepts(itemWithPath.relativePath)
+            }.map { itemWithPath ->
+                SimilarPhotoCandidate(
+                    item = itemWithPath.item,
+                    contentKey = itemWithPath.contentUri.toString(),
+                    relativePath = itemWithPath.relativePath,
+                    cacheDateMillis = itemWithPath.dateModifiedMillis ?: itemWithPath.item.dateTakenMillis,
+                )
+            },
+        )
+        result.copy(
+            fingerprintCacheHitCount = fingerprintCacheHitCount,
+            fingerprintCacheMissCount = fingerprintCacheMissCount,
         )
     }
 
@@ -140,7 +184,7 @@ class AndroidMediaStoreRepository(
         val items = mutableListOf<MediaItemWithPath>()
         contentResolver.query(
             uri,
-            projection(),
+            projection(mediaType),
             "${MediaStore.MediaColumns.SIZE} > 0",
             null,
             "${MediaStore.MediaColumns.SIZE} DESC",
@@ -164,7 +208,7 @@ class AndroidMediaStoreRepository(
         return items
     }
 
-    private fun projection(): Array<String> {
+    private fun projection(mediaType: MediaType): Array<String> {
         return buildList {
             add(MediaStore.MediaColumns._ID)
             add(MediaStore.MediaColumns.DISPLAY_NAME)
@@ -173,6 +217,9 @@ class AndroidMediaStoreRepository(
             add(MediaStore.MediaColumns.DATE_TAKEN)
             add(MediaStore.MediaColumns.WIDTH)
             add(MediaStore.MediaColumns.HEIGHT)
+            if (mediaType == MediaType.Video) {
+                add(MediaStore.Video.VideoColumns.DURATION)
+            }
             if (Build.VERSION.SDK_INT >= 29) {
                 add(MediaStore.MediaColumns.RELATIVE_PATH)
             }
@@ -193,6 +240,7 @@ class AndroidMediaStoreRepository(
             },
             width = getOptionalInt(MediaStore.MediaColumns.WIDTH),
             height = getOptionalInt(MediaStore.MediaColumns.HEIGHT),
+            durationMillis = getOptionalLong(MediaStore.Video.VideoColumns.DURATION),
         )
     }
 

@@ -26,6 +26,7 @@ data class PhotoDeleteReconciliation(
             stillExistingContentUris: List<String>? = null,
             remainingHighPriorityGroupCount: Int = 0,
             remainingMediumPriorityGroupCount: Int = 0,
+            keepStrategy: PhotoReviewKeepStrategy? = null,
         ): PhotoDeleteReconciliation? {
             if (summary == null || result?.status != PhotoDeletionStatus.Deleted) {
                 return null
@@ -49,10 +50,23 @@ data class PhotoDeleteReconciliation(
                 stillNeedsReviewCount = stillNeedsReviewUris.size,
                 stillNeedsReviewUris = stillNeedsReviewUris,
                 remainingGroupCount = currentGroups.size,
-                remainingRecoverableBytes = currentGroups.sumOf { it.recoverableBytes },
+                remainingRecoverableBytes = currentGroups.remainingRecoverableBytes(keepStrategy),
                 remainingHighPriorityGroupCount = remainingHighPriorityGroupCount,
                 remainingMediumPriorityGroupCount = remainingMediumPriorityGroupCount,
             )
+        }
+    }
+}
+
+private fun List<DuplicateGroup>.remainingRecoverableBytes(
+    keepStrategy: PhotoReviewKeepStrategy?,
+): Long {
+    return sumOf { group ->
+        if (keepStrategy == null) {
+            group.recoverableBytes
+        } else {
+            val keepId = group.keepItem(keepStrategy).id
+            group.items.filterNot { item -> item.id == keepId }.sumOf { item -> item.sizeBytes }
         }
     }
 }

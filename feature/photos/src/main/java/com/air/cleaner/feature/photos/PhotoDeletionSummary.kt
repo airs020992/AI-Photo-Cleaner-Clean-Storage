@@ -9,6 +9,7 @@ data class PhotoDeletionSummary(
     val contentUris: List<String>,
     val highPriorityGroupCount: Int = 0,
     val mediumPriorityGroupCount: Int = 0,
+    val selectedGroups: List<PhotoDeletionGroupSummary> = emptyList(),
 ) {
     val canRequestSystemDelete: Boolean = itemCount > 0 && contentUris.size == itemCount
     val missingDeleteAccessCount: Int = itemCount - contentUris.size
@@ -16,6 +17,12 @@ data class PhotoDeletionSummary(
     val systemConfirmationLabel: String = "Android confirmation required"
     val cancelSafetyLabel: String = "Cancel keeps your current selection"
     val priorityGroupCount: Int = highPriorityGroupCount + mediumPriorityGroupCount
+    val selectedGroupCount: Int = selectedGroups.size
+    val selectedGroupCountLabel: String? = if (selectedGroupCount > 0) {
+        "$selectedGroupCount ${if (selectedGroupCount == 1) "group" else "groups"} selected"
+    } else {
+        null
+    }
     val priorityGroupCountLabel: String? = if (priorityGroupCount > 0) {
         "$priorityGroupCount priority ${if (priorityGroupCount == 1) "group" else "groups"} selected"
     } else {
@@ -47,22 +54,53 @@ data class PhotoDeletionSummary(
             keepStrategy: PhotoReviewKeepStrategy,
         ): PhotoDeletionSummary {
             val selectedIds = selectionState.selectedItems.map { it.id }.toSet()
-            val selectedGroups = groups.filter { group ->
+            val reviewOrderedGroups = groups.toSimilarScreenshotReviewWorkflow(
+                keepStrategy = keepStrategy,
+                filter = SimilarScreenshotReviewFilter.All,
+            ).groups
+            val selectedGroups = reviewOrderedGroups.withIndex().filter { (_, group) ->
                 group.items.any { item -> item.id in selectedIds }
             }
             val highPriorityGroupCount = selectedGroups.count { group ->
-                group.similarScreenshotKeepGuidance(keepStrategy).reviewPriority == SimilarScreenshotReviewPriority.High
+                group.value.similarScreenshotKeepGuidance(keepStrategy).reviewPriority == SimilarScreenshotReviewPriority.High
             }
             val mediumPriorityGroupCount = selectedGroups.count { group ->
-                group.similarScreenshotKeepGuidance(keepStrategy).reviewPriority == SimilarScreenshotReviewPriority.Medium
+                group.value.similarScreenshotKeepGuidance(keepStrategy).reviewPriority == SimilarScreenshotReviewPriority.Medium
             }
             return fromItems(selectionState.selectedItems).copy(
                 highPriorityGroupCount = highPriorityGroupCount,
                 mediumPriorityGroupCount = mediumPriorityGroupCount,
+                selectedGroups = selectedGroups.map { indexedGroup ->
+                    val group = indexedGroup.value
+                    val selectedItems = group.items
+                        .filter { item -> item.id in selectedIds }
+                        .sortedByDescending { item -> item.dateTakenMillis }
+                    val priority = group.similarScreenshotKeepGuidance(keepStrategy).reviewPriority
+                    PhotoDeletionGroupSummary(
+                        groupLabel = "Group ${indexedGroup.index + 1}",
+                        selectedCount = selectedItems.size,
+                        bytesToDelete = selectedItems.sumOf { it.sizeBytes },
+                        keepDisplayName = group.keepItem(keepStrategy).displayName,
+                        previewDisplayNames = selectedItems.take(3).map { it.displayName },
+                        hiddenPreviewCount = (selectedItems.size - 3).coerceAtLeast(0),
+                        isPriority = priority == SimilarScreenshotReviewPriority.High ||
+                            priority == SimilarScreenshotReviewPriority.Medium,
+                    )
+                },
             )
         }
     }
 }
+
+data class PhotoDeletionGroupSummary(
+    val groupLabel: String,
+    val selectedCount: Int,
+    val bytesToDelete: Long,
+    val keepDisplayName: String,
+    val previewDisplayNames: List<String>,
+    val hiddenPreviewCount: Int,
+    val isPriority: Boolean,
+)
 
 private fun PhotoDeletionSummary.priorityCountParts(): List<String> {
     return listOfNotNull(

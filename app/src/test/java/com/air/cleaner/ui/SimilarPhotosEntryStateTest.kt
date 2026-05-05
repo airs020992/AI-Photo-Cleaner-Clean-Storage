@@ -11,65 +11,33 @@ class SimilarPhotosEntryStateTest {
     fun loadingBeforeGroupsShowsScanningMetric() {
         val state = similarPhotosEntryState(
             groups = null,
-            reviewStatus = SimilarScreenshotReviewStatus.Loading,
-            screenshotCount = null,
             formatBytes = { "$it bytes" },
         )
 
         assertEquals("Scanning", state.metric)
-        assertEquals("Checking screenshots for near-identical captures", state.subtitle)
-    }
-
-    @Test
-    fun loadingWithKnownScreenshotScopeShowsProgressScope() {
-        val state = similarPhotosEntryState(
-            groups = null,
-            reviewStatus = SimilarScreenshotReviewStatus.Loading,
-            screenshotCount = 37,
-            formatBytes = { "$it bytes" },
-        )
-
-        assertEquals("37 screenshots", state.metric)
-        assertEquals("Tap to watch live scan progress across 37 screenshots", state.subtitle)
+        assertEquals("Checking camera and album photos for near-duplicates", state.subtitle)
     }
 
     @Test
     fun freshGroupsShowRecoverableSpaceAndReadyCopy() {
         val state = similarPhotosEntryState(
             groups = listOf(group("ready")),
-            reviewStatus = SimilarScreenshotReviewStatus.Fresh,
-            screenshotCount = 2,
             formatBytes = { "$it bytes" },
         )
 
         assertEquals("1000 bytes", state.metric)
-        assertEquals("Near-identical screenshots ready for review", state.subtitle)
+        assertEquals("Near-identical photos ready for review", state.subtitle)
     }
 
     @Test
     fun freshEmptyGroupsExplainSafeThreshold() {
         val state = similarPhotosEntryState(
             groups = emptyList(),
-            reviewStatus = SimilarScreenshotReviewStatus.Fresh,
-            screenshotCount = 12,
             formatBytes = { "$it bytes" },
         )
 
         assertEquals("0 found", state.metric)
-        assertEquals("No safe matches yet. Try 2-3 screenshots of the same screen.", state.subtitle)
-    }
-
-    @Test
-    fun freshEmptyGroupsExplainZeroScreenshotsInScope() {
-        val state = similarPhotosEntryState(
-            groups = emptyList(),
-            reviewStatus = SimilarScreenshotReviewStatus.Fresh,
-            screenshotCount = 0,
-            formatBytes = { "$it bytes" },
-        )
-
-        assertEquals("0 screenshots", state.metric)
-        assertEquals("No screenshots in access scope. Capture or allow photos, then rescan.", state.subtitle)
+        assertEquals("No safe photo matches yet. Burst or same-scene shots will appear here.", state.subtitle)
     }
 
     private fun group(key: String): DuplicateGroup {

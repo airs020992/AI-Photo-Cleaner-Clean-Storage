@@ -19,8 +19,10 @@ object MediaStoreRowMapper {
             dateTakenMillis = dateMillis,
             contentHash = null,
             mediaType = mediaType,
+            relativePath = row.relativePath?.trim()?.takeIf { it.isNotEmpty() },
             width = row.width?.takeIf { it > 0 },
             height = row.height?.takeIf { it > 0 },
+            durationMillis = row.durationMillis?.takeIf { it > 0 },
         )
     }
 

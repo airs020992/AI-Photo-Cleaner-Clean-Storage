@@ -20,4 +20,21 @@ data class MediaPermissionState(
 
     val canScanFullLibrary: Boolean
         get() = access == MediaPermissionAccess.Full
+
+    val shouldWarnLimitedLibraryAccess: Boolean
+        get() = access == MediaPermissionAccess.SelectedOnly
+
+    val accessNoticeTitle: String?
+        get() = if (shouldWarnLimitedLibraryAccess) {
+            "Limited photo access"
+        } else {
+            null
+        }
+
+    val accessNoticeMessage: String?
+        get() = if (shouldWarnLimitedLibraryAccess) {
+            "Only selected photos are visible. Allow full access to scan the whole library."
+        } else {
+            null
+        }
 }

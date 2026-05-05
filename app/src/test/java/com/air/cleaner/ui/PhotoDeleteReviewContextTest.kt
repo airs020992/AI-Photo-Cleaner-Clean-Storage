@@ -14,10 +14,24 @@ class PhotoDeleteReviewContextTest {
 
         val groups = PhotoDeleteReviewContext.DuplicatePhotos.groupsForReconciliation(
             duplicatePhotoGroups = duplicateGroups,
+            similarPhotoGroups = listOf(group("similar-photo")),
             similarScreenshotGroups = similarScreenshotGroups,
         )
 
         assertEquals(listOf("duplicate"), groups.map { it.key })
+    }
+
+    @Test
+    fun similarPhotoDeletesReconcileAgainstSimilarPhotoGroups() {
+        val similarPhotoGroups = listOf(group("similar-photo"))
+
+        val groups = PhotoDeleteReviewContext.SimilarPhotos.groupsForReconciliation(
+            duplicatePhotoGroups = listOf(group("duplicate")),
+            similarPhotoGroups = similarPhotoGroups,
+            similarScreenshotGroups = listOf(group("similar-screenshot")),
+        )
+
+        assertEquals(listOf("similar-photo"), groups.map { it.key })
     }
 
     @Test
@@ -27,10 +41,36 @@ class PhotoDeleteReviewContextTest {
 
         val groups = PhotoDeleteReviewContext.SimilarScreenshots.groupsForReconciliation(
             duplicatePhotoGroups = duplicateGroups,
+            similarPhotoGroups = listOf(group("similar-photo")),
             similarScreenshotGroups = similarScreenshotGroups,
         )
 
         assertEquals(listOf("similar"), groups.map { it.key })
+    }
+
+    @Test
+    fun largeVideoDeletesDoNotReconcileAgainstPhotoGroups() {
+        val groups = PhotoDeleteReviewContext.LargeVideos.groupsForReconciliation(
+            duplicatePhotoGroups = listOf(group("duplicate")),
+            similarPhotoGroups = listOf(group("similar-photo")),
+            similarScreenshotGroups = listOf(group("similar-screenshot")),
+        )
+
+        assertEquals(emptyList<DuplicateGroup>(), groups)
+    }
+
+    @Test
+    fun largeVideoDeleteCopyUsesVideoLanguage() {
+        assertEquals("Delete selected videos?", PhotoDeleteReviewContext.LargeVideos.deleteDialogTitle)
+        assertEquals("Videos", PhotoDeleteReviewContext.LargeVideos.deleteDialogItemLabel)
+        assertEquals(
+            "Your library was refreshed. Continue reviewing any remaining large videos.",
+            PhotoDeleteReviewContext.LargeVideos.deleteResultDeletedMessage,
+        )
+        assertEquals(
+            "No videos were removed. Your previous selection is still available for review.",
+            PhotoDeleteReviewContext.LargeVideos.deleteResultCanceledMessage,
+        )
     }
 
     private fun group(key: String): DuplicateGroup {

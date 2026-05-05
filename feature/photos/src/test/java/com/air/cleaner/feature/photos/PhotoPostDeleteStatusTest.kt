@@ -148,6 +148,7 @@ class PhotoPostDeleteStatusTest {
             listOf(
                 PhotoPostDeleteMetric("Requested", "5"),
                 PhotoPostDeleteMetric("Deleted", "3"),
+                PhotoPostDeleteMetric("Freed", "5 KB"),
                 PhotoPostDeleteMetric("Still exists", "2"),
                 PhotoPostDeleteMetric("Remaining duplicates", "2 groups"),
             ),
@@ -199,6 +200,7 @@ class PhotoPostDeleteStatusTest {
             listOf(
                 PhotoPostDeleteMetric("Requested", "8"),
                 PhotoPostDeleteMetric("Deleted", "8"),
+                PhotoPostDeleteMetric("Freed", "5 KB"),
                 PhotoPostDeleteMetric("Still exists", "0"),
                 PhotoPostDeleteMetric("Remaining duplicates", "4 groups"),
                 PhotoPostDeleteMetric("Priority remaining", "2 groups"),

@@ -15,6 +15,23 @@ enum class PhotoReviewSelectionAction(val analyticsValue: String) {
     PreviewToggle("preview_toggle"),
 }
 
+enum class PhotoReviewPreviewAction(val analyticsValue: String) {
+    Open("open"),
+    Previous("previous"),
+    Next("next"),
+    Close("close"),
+}
+
+data class PhotoReviewPreviewEvent(
+    val action: PhotoReviewPreviewAction,
+    val selectedCount: Int,
+    val selectedBytes: Long,
+    val photoIndex: Int,
+    val photoCount: Int,
+    val selectedForDeletion: Boolean,
+    val recommendedKeep: Boolean,
+)
+
 data class PhotoReviewSelectionState(
     private val groups: List<DuplicateGroup>,
     private val selectedIds: Set<String>,

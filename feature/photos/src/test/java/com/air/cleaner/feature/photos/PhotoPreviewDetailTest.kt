@@ -24,6 +24,9 @@ class PhotoPreviewDetailTest {
         assertEquals("Checkout confirmation.png", detail.fileLine)
         assertEquals("Recommended keep | 2 MB", detail.roleLine)
         assertEquals("Status: kept", detail.statusLine)
+        assertEquals("Keep this photo", detail.decisionTitle)
+        assertEquals("This is the copy AI Photo Cleaner recommends keeping. It will not be deleted unless you change the selection.", detail.decisionBody)
+        assertEquals("Select for deletion", detail.decisionActionLabel)
         assertEquals("Size: 2 MB | 1440 x 3120", detail.metadataLine)
     }
 
@@ -44,7 +47,31 @@ class PhotoPreviewDetailTest {
         assertEquals("Checkout confirmation copy.png", detail.fileLine)
         assertEquals("Similar screenshot | 2 MB", detail.roleLine)
         assertEquals("Status: selected for deletion", detail.statusLine)
+        assertEquals("Ready to delete", detail.decisionTitle)
+        assertEquals("This photo is selected for cleanup. Android will ask for final confirmation before anything is removed.", detail.decisionBody)
+        assertEquals("Keep this", detail.decisionActionLabel)
         assertEquals("Size: 2 MB | dimensions unavailable", detail.metadataLine)
+    }
+
+    @Test
+    fun unselectedCandidateExplainsManualReviewStatus() {
+        val detail = mediaItem(
+            id = "candidate",
+            displayName = "Checkout confirmation alt.png",
+            sizeBytes = 3_145_728L,
+            width = 1080,
+            height = 2400,
+        ).toPhotoPreviewDetail(
+            isRecommendedKeep = false,
+            selectedForDeletion = false,
+            itemMatchLabel = "Similar screenshot",
+        )
+
+        assertEquals("Similar screenshot | 3 MB", detail.roleLine)
+        assertEquals("Status: kept", detail.statusLine)
+        assertEquals("Not selected", detail.decisionTitle)
+        assertEquals("This similar photo is currently protected. Select it only if the larger preview confirms it is safe to remove.", detail.decisionBody)
+        assertEquals("Select for deletion", detail.decisionActionLabel)
     }
 
     private fun mediaItem(

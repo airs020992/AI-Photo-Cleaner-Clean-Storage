@@ -43,6 +43,44 @@ class AppNavigationStateTest {
     }
 
     @Test
+    fun similarPhotoActionOpensReviewAfterScanCompletes() {
+        val state = AppNavigationState()
+
+        val next = state.openSimilarPhotos(scanComplete = true)
+
+        assertEquals(AppTab.Photos, next.selectedTab)
+        assertEquals(AppScreen.SimilarPhotoReview, next.currentScreen)
+    }
+
+    @Test
+    fun similarPhotoActionWaitsForScanCompletion() {
+        val state = AppNavigationState()
+
+        val next = state.openSimilarPhotos(scanComplete = false)
+
+        assertEquals(state, next)
+    }
+
+    @Test
+    fun largeVideosActionOpensReviewAfterScanCompletes() {
+        val state = AppNavigationState()
+
+        val next = state.openLargeVideos(scanComplete = true)
+
+        assertEquals(AppTab.Videos, next.selectedTab)
+        assertEquals(AppScreen.LargeVideoReview, next.currentScreen)
+    }
+
+    @Test
+    fun largeVideosActionWaitsForScanCompletion() {
+        val state = AppNavigationState()
+
+        val next = state.openLargeVideos(scanComplete = false)
+
+        assertEquals(state, next)
+    }
+
+    @Test
     fun similarScreenshotActionOpensReviewAfterScanCompletes() {
         val state = AppNavigationState()
 

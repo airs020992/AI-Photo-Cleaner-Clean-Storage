@@ -18,6 +18,39 @@ class SimilarScreenshotReviewStatusTest {
     }
 
     @Test
+    fun cachedGroupsShowDisabledBackgroundRefreshAction() {
+        val state = SimilarScreenshotReviewStatus.CachedRefreshing.reviewActionState(hasGroups = true)
+
+        assertEquals("Refreshing results", state?.title)
+        assertEquals(
+            "Saved groups stay visible while we check your latest screenshots.",
+            state?.message,
+        )
+        assertEquals("Refreshing", state?.actionLabel)
+        assertEquals(false, state?.actionEnabled)
+    }
+
+    @Test
+    fun freshGroupsOfferManualRescanAction() {
+        val state = SimilarScreenshotReviewStatus.Fresh.reviewActionState(hasGroups = true)
+
+        assertEquals("Took new screenshots?", state?.title)
+        assertEquals(
+            "Scan again before deleting to include the latest captures.",
+            state?.message,
+        )
+        assertEquals("Scan again", state?.actionLabel)
+        assertEquals(true, state?.actionEnabled)
+    }
+
+    @Test
+    fun emptyResultsUseEmptyStateRescanInsteadOfReviewAction() {
+        val state = SimilarScreenshotReviewStatus.Fresh.reviewActionState(hasGroups = false)
+
+        assertNull(state)
+    }
+
+    @Test
     fun freshGroupsDoNotShowNotice() {
         val status = SimilarScreenshotReviewStatus.Fresh
 

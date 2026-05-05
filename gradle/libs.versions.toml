@@ -17,6 +17,7 @@ billing = "7.1.1"
 ads = "23.6.0"
 firebaseBom = "33.9.0"
 googleServices = "4.4.2"
+media3 = "1.9.3"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
@@ -55,6 +56,9 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-config = { module = "com.google.firebase:firebase-config" }
+media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
+media3-effect = { module = "androidx.media3:media3-effect", version.ref = "media3" }
+media3-transformer = { module = "androidx.media3:media3-transformer", version.ref = "media3" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }

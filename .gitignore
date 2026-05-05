@@ -2,6 +2,7 @@
 .kotlin/
 build/
 local.properties
+local-signing.properties
 *.iml
 .idea/
 
@@ -9,6 +10,7 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+.tmp_media3/
 
 *.apk
 *.aab

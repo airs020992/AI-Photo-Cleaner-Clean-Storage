@@ -9,4 +9,5 @@ data class MediaStoreRow(
     val relativePath: String?,
     val width: Int?,
     val height: Int?,
+    val durationMillis: Long? = null,
 )

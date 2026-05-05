@@ -10,8 +10,20 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            AIPhotoCleanerApp()
+        val debugSimilarPhotoRelativePathPrefix = if (BuildConfig.DEBUG) {
+            intent.getStringExtra(DEBUG_SIMILAR_PHOTO_RELATIVE_PATH_PREFIX_EXTRA)
+        } else {
+            null
         }
+        setContent {
+            AIPhotoCleanerApp(
+                debugSimilarPhotoRelativePathPrefix = debugSimilarPhotoRelativePathPrefix,
+            )
+        }
+    }
+
+    companion object {
+        const val DEBUG_SIMILAR_PHOTO_RELATIVE_PATH_PREFIX_EXTRA =
+            "debug_similar_photo_relative_path_prefix"
     }
 }

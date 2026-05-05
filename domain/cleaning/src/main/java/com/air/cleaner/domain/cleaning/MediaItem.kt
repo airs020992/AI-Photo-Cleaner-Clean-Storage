@@ -8,8 +8,10 @@ data class MediaItem(
     val contentHash: String?,
     val mediaType: MediaType,
     val contentUri: String? = null,
+    val relativePath: String? = null,
     val width: Int? = null,
     val height: Int? = null,
+    val durationMillis: Long? = null,
 )
 
 enum class MediaType {

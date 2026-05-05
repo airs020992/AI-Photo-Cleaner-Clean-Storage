@@ -23,6 +23,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,9 +63,15 @@ fun PhotoReviewScreen(
     onEmptyAction: (() -> Unit)? = null,
     onReviewReady: (PhotoReviewSelectionState) -> Unit = {},
     onSelectionChanged: (PhotoReviewSelectionState, PhotoReviewSelectionAction) -> Unit = { _, _ -> },
+    onPreviewAction: (PhotoReviewPreviewEvent) -> Unit = {},
     itemMatchLabel: String = "Duplicate",
     groupMatchExplanation: ((DuplicateGroup) -> String?)? = null,
     groupTrustSummary: ((DuplicateGroup) -> SimilarScreenshotTrustSummary?)? = null,
+    reviewActionTitle: String? = null,
+    reviewActionMessage: String? = null,
+    reviewActionLabel: String? = null,
+    reviewActionEnabled: Boolean = true,
+    onReviewAction: (() -> Unit)? = null,
     keepStrategy: PhotoReviewKeepStrategy = PhotoReviewKeepStrategy.Recommended,
 ) {
     val usesSimilarScreenshotWorkflow = groupTrustSummary != null
@@ -142,6 +150,20 @@ fun PhotoReviewScreen(
                     message = noticeMessage,
                 )
             }
+            if (
+                reviewActionTitle != null &&
+                reviewActionMessage != null &&
+                reviewActionLabel != null &&
+                onReviewAction != null
+            ) {
+                ReviewActionCard(
+                    title = reviewActionTitle,
+                    message = reviewActionMessage,
+                    actionLabel = reviewActionLabel,
+                    actionEnabled = reviewActionEnabled,
+                    onAction = onReviewAction,
+                )
+            }
 
             if (groups.isEmpty()) {
                 EmptyDuplicateReviewCard(
@@ -200,6 +222,15 @@ fun PhotoReviewScreen(
                             trustSummary = groupTrustSummary?.invoke(group),
                             keepStrategy = keepStrategy,
                             onPreviewItem = { item ->
+                                val session = group.items.toPhotoPreviewSession(item.id)
+                                onPreviewAction(
+                                    selectionState.toPreviewEvent(
+                                        action = PhotoReviewPreviewAction.Open,
+                                        group = group,
+                                        session = session,
+                                        keepStrategy = keepStrategy,
+                                    ),
+                                )
                                 previewRequest = PhotoPreviewRequest(
                                     groupKey = group.key,
                                     itemId = item.id,
@@ -239,9 +270,27 @@ fun PhotoReviewScreen(
                 ),
                 session = session,
                 onPrevious = {
+                    val nextSession = previewGroup.items.toPhotoPreviewSession(session.previousItem.id)
+                    onPreviewAction(
+                        selectionState.toPreviewEvent(
+                            action = PhotoReviewPreviewAction.Previous,
+                            group = previewGroup,
+                            session = nextSession,
+                            keepStrategy = keepStrategy,
+                        ),
+                    )
                     previewRequest = request.copy(itemId = session.previousItem.id)
                 },
                 onNext = {
+                    val nextSession = previewGroup.items.toPhotoPreviewSession(session.nextItem.id)
+                    onPreviewAction(
+                        selectionState.toPreviewEvent(
+                            action = PhotoReviewPreviewAction.Next,
+                            group = previewGroup,
+                            session = nextSession,
+                            keepStrategy = keepStrategy,
+                        ),
+                    )
                     previewRequest = request.copy(itemId = session.nextItem.id)
                 },
                 onToggleSelection = {
@@ -252,10 +301,38 @@ fun PhotoReviewScreen(
                         onSelectionChanged(nextSelectionState, PhotoReviewSelectionAction.PreviewToggle)
                     }
                 },
-                onDismiss = { previewRequest = null },
+                onDismiss = {
+                    onPreviewAction(
+                        selectionState.toPreviewEvent(
+                            action = PhotoReviewPreviewAction.Close,
+                            group = previewGroup,
+                            session = session,
+                            keepStrategy = keepStrategy,
+                        ),
+                    )
+                    previewRequest = null
+                },
             )
         }
     }
+}
+
+private fun PhotoReviewSelectionState.toPreviewEvent(
+    action: PhotoReviewPreviewAction,
+    group: DuplicateGroup,
+    session: PhotoPreviewSession,
+    keepStrategy: PhotoReviewKeepStrategy,
+): PhotoReviewPreviewEvent {
+    val currentItem = session.currentItem
+    return PhotoReviewPreviewEvent(
+        action = action,
+        selectedCount = selectedCount,
+        selectedBytes = selectedBytes,
+        photoIndex = session.currentIndex + 1,
+        photoCount = session.items.size,
+        selectedForDeletion = isSelectedForDeletion(currentItem.id),
+        recommendedKeep = currentItem.id == group.keepItem(keepStrategy).id,
+    )
 }
 
 @Composable
@@ -502,22 +579,27 @@ fun PhotoDeleteConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirmDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    title: String = "Delete selected photos?",
+    itemLabel: String = "Photos",
 ) {
     AlertDialog(
         modifier = modifier,
         onDismissRequest = onDismiss,
         title = {
-            Text("Delete selected photos?")
+            Text(title)
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     DeleteConfirmationMetric(
                         value = summary.itemCountLabel,
-                        label = "Photos",
+                        label = itemLabel,
                         modifier = Modifier.weight(1f),
                     )
                     DeleteConfirmationMetric(
@@ -531,6 +613,9 @@ fun PhotoDeleteConfirmationDialog(
                         title = priorityLabel,
                         message = summary.priorityWarningLine.orEmpty(),
                     )
+                }
+                if (summary.selectedGroups.isNotEmpty()) {
+                    DeleteConfirmationGroupReviewBlock(summary = summary)
                 }
                 DeleteConfirmationTrustLine(summary.systemConfirmationLabel)
                 DeleteConfirmationTrustLine(summary.cancelSafetyLabel)
@@ -562,6 +647,92 @@ fun PhotoDeleteConfirmationDialog(
             }
         },
     )
+}
+
+@Composable
+private fun DeleteConfirmationGroupReviewBlock(
+    summary: PhotoDeletionSummary,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = summary.selectedGroupCountLabel ?: "Selected groups",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            summary.selectedGroups.take(3).forEach { group ->
+                DeleteConfirmationGroupRow(group = group)
+            }
+            val hiddenGroupCount = summary.selectedGroups.size - 3
+            if (hiddenGroupCount > 0) {
+                Text(
+                    text = "+$hiddenGroupCount more groups selected",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteConfirmationGroupRow(
+    group: PhotoDeletionGroupSummary,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = "${group.groupLabel}${if (group.isPriority) " | priority" else ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${group.selectedCount} | ${formatBytes(group.bytesToDelete)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = "Keep: ${group.keepDisplayName}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val hiddenSuffix = if (group.hiddenPreviewCount > 0) {
+            " +${group.hiddenPreviewCount} more"
+        } else {
+            ""
+        }
+        Text(
+            text = "Delete: ${group.previewDisplayNames.joinToString()}$hiddenSuffix",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -642,6 +813,8 @@ fun PhotoDeleteResultDialog(
     result: PhotoDeletionResult,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
+    deletedMessage: String = "Your library was refreshed. Continue reviewing any remaining duplicate groups.",
+    canceledMessage: String = "No photos were removed. Your previous selection is still available for review.",
 ) {
     AlertDialog(
         modifier = modifier,
@@ -668,8 +841,8 @@ fun PhotoDeleteResultDialog(
                 }
                 Text(
                     text = when (result.status) {
-                        PhotoDeletionStatus.Deleted -> "Your library was refreshed. Continue reviewing any remaining duplicate groups."
-                        PhotoDeletionStatus.Canceled -> "No photos were removed. Your previous selection is still available for review."
+                        PhotoDeletionStatus.Deleted -> deletedMessage
+                        PhotoDeletionStatus.Canceled -> canceledMessage
                         PhotoDeletionStatus.Blocked -> "No photos were removed because Android could not open a system delete request for this selection."
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -683,6 +856,52 @@ fun PhotoDeleteResultDialog(
             }
         },
     )
+}
+
+@Composable
+private fun ReviewActionCard(
+    title: String,
+    message: String,
+    actionLabel: String,
+    actionEnabled: Boolean,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.62f),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            TextButton(
+                enabled = actionEnabled,
+                onClick = onAction,
+            ) {
+                Text(actionLabel)
+            }
+        }
+    }
 }
 
 @Composable
@@ -908,14 +1127,69 @@ private fun PhotoPreviewDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AlertDialog(
-        modifier = modifier,
+    Dialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(detail.title)
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(12.dp)
+                .navigationBarsPadding(),
+            shape = RoundedCornerShape(24.dp),
+            tonalElevation = 6.dp,
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = detail.title,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = session.positionLine,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (item.contentUri != null) {
+                        AsyncImage(
+                            model = item.contentUri,
+                            contentDescription = detail.fileLine,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    } else {
+                        Text(
+                            text = item.displayName.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -939,26 +1213,37 @@ private fun PhotoPreviewDialog(
                         Text("Next")
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(320.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (item.contentUri != null) {
-                        AsyncImage(
-                            model = item.contentUri,
-                            contentDescription = detail.fileLine,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    color = if (detail.selectedForDeletion) {
+                        MaterialTheme.colorScheme.errorContainer
                     } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    },
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Text(
-                            text = item.displayName.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = detail.decisionTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (detail.selectedForDeletion) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            },
+                        )
+                        Text(
+                            text = detail.decisionBody,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (detail.selectedForDeletion) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            },
                         )
                     }
                 }
@@ -1006,18 +1291,16 @@ private fun PhotoPreviewDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Button(onClick = onToggleSelection) {
-                        Text(if (detail.selectedForDeletion) "Keep this" else "Select for deletion")
-                    }
+                }
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onToggleSelection,
+                ) {
+                    Text(detail.decisionActionLabel)
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable

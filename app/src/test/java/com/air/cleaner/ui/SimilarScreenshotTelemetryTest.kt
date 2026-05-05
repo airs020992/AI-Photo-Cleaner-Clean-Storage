@@ -1,6 +1,7 @@
 package com.air.cleaner.ui
 
 import com.air.cleaner.data.media.MediaScanSummary
+import com.air.cleaner.data.media.SimilarPhotoScanResult
 import com.air.cleaner.data.media.SimilarScreenshotScanResult
 import com.air.cleaner.domain.cleaning.DuplicateGroup
 import com.air.cleaner.domain.cleaning.MediaItem
@@ -19,12 +20,31 @@ class SimilarScreenshotTelemetryTest {
 
         assertEquals(
             setOf(
+                "similar_photos_entry_tapped",
+                "similar_photos_scan_completed",
+                "similar_photos_review_shown",
+                "similar_photos_selection_changed",
+                "similar_photos_preview_action",
+                "similar_photos_continue_tapped",
+                "similar_photos_delete_requested",
+                "similar_photos_system_delete_result",
+                "similar_photos_post_delete_action",
+                "large_videos_entry_tapped",
+                "large_videos_scan_completed",
+                "large_videos_review_shown",
+                "large_videos_selection_changed",
+                "large_videos_continue_tapped",
+                "large_videos_delete_requested",
+                "large_videos_system_delete_result",
+                "large_videos_compression_completed",
+                "large_videos_sample_matrix_updated",
                 "similar_screenshots_entry_tapped",
                 "similar_screenshots_cache_loaded",
                 "similar_screenshots_rescan_tapped",
                 "similar_screenshots_scan_completed",
                 "similar_screenshots_review_shown",
                 "similar_screenshots_selection_changed",
+                "similar_screenshots_preview_action",
                 "similar_screenshots_continue_tapped",
                 "similar_screenshots_delete_requested",
                 "similar_screenshots_system_delete_result",
@@ -152,6 +172,39 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun safeTelemetryAllowsSimilarPhotoEventsWithoutPrivatePhotoIdentity() {
+        val recordingTelemetry = RecordingCleanerTelemetry()
+        val telemetry = SafeCleanerTelemetry(delegate = recordingTelemetry)
+
+        telemetry.track(
+            CleanerTelemetryEvent(
+                name = "similar_photos_scan_completed",
+                properties = mapOf(
+                    "elapsed_ms" to 1_600L,
+                    "image_count" to 280,
+                    "group_count" to 3,
+                    "content_uri" to "content://images/private",
+                    "display_name" to "family.jpg",
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                CleanerTelemetryEvent(
+                    name = "similar_photos_scan_completed",
+                    properties = mapOf<String, Any>(
+                        "elapsed_ms" to 1_600L,
+                        "image_count" to 280,
+                        "group_count" to 3,
+                    ),
+                ),
+            ),
+            recordingTelemetry.events,
+        )
+    }
+
+    @Test
     fun compositeTelemetryForwardsToEveryDelegate() {
         val firstTelemetry = RecordingCleanerTelemetry()
         val secondTelemetry = RecordingCleanerTelemetry()
@@ -225,6 +278,74 @@ class SimilarScreenshotTelemetryTest {
             ),
             event.properties,
         )
+    }
+
+    @Test
+    fun similarPhotoScanCompletedEventCapturesLatencyAndCandidateQuality() {
+        val event = SimilarPhotoTelemetry.scanCompleted(
+            elapsedMillis = 1_650L,
+            scanSummary = scanSummary(imageCount = 280, screenshotCount = 18),
+            result = SimilarPhotoScanResult(
+                groups = listOf(group("similar-photo", recoverableBytes = 4_800L)),
+                fingerprintCandidateCount = 42,
+                fingerprintSkippedCount = 238,
+                fingerprintTimeSkippedCount = 160,
+                fingerprintSizeSkippedCount = 78,
+                fingerprintCacheHitCount = 38,
+                fingerprintCacheMissCount = 4,
+            ),
+        )
+
+        assertEquals("similar_photos_scan_completed", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "elapsed_ms" to 1_650L,
+                "image_count" to 280,
+                "screenshot_count" to 18,
+                "non_screenshot_count" to 262,
+                "fingerprint_candidate_count" to 42,
+                "fingerprint_skipped_count" to 238,
+                "fingerprint_time_skipped_count" to 160,
+                "fingerprint_size_skipped_count" to 78,
+                "fingerprint_cache_hit_count" to 38,
+                "fingerprint_cache_miss_count" to 4,
+                "group_count" to 1,
+                "recoverable_bytes" to 4_800L,
+                "empty_result" to false,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
+    fun similarScreenshotRecoverableBytesUseNewestKeepStrategyForProductMetrics() {
+        val group = similarScreenshotGroupWhereNewestIsNotLargest()
+
+        val entryEvent = SimilarScreenshotTelemetry.entryTapped(
+            groups = listOf(group),
+            status = SimilarScreenshotReviewStatus.Fresh,
+        )
+        val scanEvent = SimilarScreenshotTelemetry.scanCompleted(
+            elapsedMillis = 300L,
+            scanSummary = scanSummary(screenshotCount = 3),
+            result = SimilarScreenshotScanResult(
+                groups = listOf(group),
+                fingerprintCandidateCount = 3,
+                fingerprintSkippedCount = 0,
+            ),
+            status = SimilarScreenshotReviewStatus.Fresh,
+        )
+        val reviewEvent = SimilarScreenshotTelemetry.reviewShown(
+            groups = listOf(group),
+            selectedCount = 2,
+            selectedBytes = 7_000L,
+            priorityGroups = 1,
+            status = SimilarScreenshotReviewStatus.Fresh,
+        )
+
+        assertEquals(7_000L, entryEvent.properties["recoverable_bytes"])
+        assertEquals(7_000L, scanEvent.properties["recoverable_bytes"])
+        assertEquals(7_000L, reviewEvent.properties["recoverable_bytes"])
     }
 
     @Test
@@ -302,6 +423,37 @@ class SimilarScreenshotTelemetryTest {
     }
 
     @Test
+    fun previewActionEventCapturesComparisonBehaviorWithoutPhotoIdentity() {
+        val event = SimilarScreenshotTelemetry.previewAction(
+            action = "next",
+            selectedCount = 2,
+            selectedBytes = 3_500L,
+            totalGroups = 4,
+            priorityGroups = 1,
+            photoIndex = 2,
+            photoCount = 3,
+            selectedForDeletion = true,
+            recommendedKeep = false,
+        )
+
+        assertEquals("similar_screenshots_preview_action", event.name)
+        assertEquals(
+            mapOf<String, Any>(
+                "action" to "next",
+                "selected_count" to 2,
+                "selected_bytes" to 3_500L,
+                "total_groups" to 4,
+                "priority_groups" to 1,
+                "photo_index" to 2,
+                "photo_count" to 3,
+                "selected_for_deletion" to true,
+                "recommended_keep" to false,
+            ),
+            event.properties,
+        )
+    }
+
+    @Test
     fun deleteRequestedEventCapturesSystemDialogAvailability() {
         val event = SimilarScreenshotTelemetry.deleteRequested(
             summary = PhotoDeletionSummary(
@@ -353,9 +505,12 @@ class SimilarScreenshotTelemetryTest {
         )
     }
 
-    private fun scanSummary(screenshotCount: Int): MediaScanSummary {
+    private fun scanSummary(
+        screenshotCount: Int,
+        imageCount: Int = screenshotCount,
+    ): MediaScanSummary {
         return MediaScanSummary(
-            imageCount = screenshotCount,
+            imageCount = imageCount,
             videoCount = 0,
             imageBytes = 0L,
             videoBytes = 0L,
@@ -388,6 +543,41 @@ class SimilarScreenshotTelemetryTest {
                     contentHash = key,
                     mediaType = MediaType.Image,
                     contentUri = "content://images/$key-delete",
+                ),
+            ),
+        )
+    }
+
+    private fun similarScreenshotGroupWhereNewestIsNotLargest(): DuplicateGroup {
+        return DuplicateGroup(
+            key = "similar",
+            items = listOf(
+                MediaItem(
+                    id = "similar-newest",
+                    displayName = "similar-newest.jpg",
+                    sizeBytes = 1_000L,
+                    dateTakenMillis = 3_000L,
+                    contentHash = "similar",
+                    mediaType = MediaType.Image,
+                    contentUri = "content://images/similar-newest",
+                ),
+                MediaItem(
+                    id = "similar-largest",
+                    displayName = "similar-largest.jpg",
+                    sizeBytes = 5_000L,
+                    dateTakenMillis = 2_000L,
+                    contentHash = "similar",
+                    mediaType = MediaType.Image,
+                    contentUri = "content://images/similar-largest",
+                ),
+                MediaItem(
+                    id = "similar-middle",
+                    displayName = "similar-middle.jpg",
+                    sizeBytes = 2_000L,
+                    dateTakenMillis = 1_000L,
+                    contentHash = "similar",
+                    mediaType = MediaType.Image,
+                    contentUri = "content://images/similar-middle",
                 ),
             ),
         )

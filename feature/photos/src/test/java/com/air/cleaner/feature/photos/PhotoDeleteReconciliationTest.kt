@@ -43,6 +43,24 @@ class PhotoDeleteReconciliationTest {
     }
 
     @Test
+    fun usesSimilarScreenshotNewestKeepStrategyForRemainingRecoverableBytes() {
+        val reconciliation = PhotoDeleteReconciliation.from(
+            summary = deleteSummary("content://images/deleted", bytes = 1_000L),
+            result = PhotoDeletionResult(PhotoDeletionStatus.Deleted, itemCount = 1, bytes = 1_000L),
+            currentGroups = listOf(
+                duplicateGroup(
+                    item("newest", sizeBytes = 1_000L, dateTakenMillis = 3_000L, contentUri = "content://images/newest"),
+                    item("largest", sizeBytes = 9_000L, dateTakenMillis = 2_000L, contentUri = "content://images/largest"),
+                    item("older", sizeBytes = 2_000L, dateTakenMillis = 1_000L, contentUri = "content://images/older"),
+                ),
+            ),
+            keepStrategy = PhotoReviewKeepStrategy.Newest,
+        )
+
+        assertEquals(11_000L, reconciliation?.remainingRecoverableBytes)
+    }
+
+    @Test
     fun prioritizesMediaStoreExistenceWhenAvailable() {
         val reconciliation = PhotoDeleteReconciliation.from(
             summary = deleteSummary("content://images/a", "content://images/b", bytes = 2_000L),
@@ -87,12 +105,17 @@ class PhotoDeleteReconciliationTest {
         return DuplicateGroup(key = "group", items = items.toList())
     }
 
-    private fun item(id: String, contentUri: String): MediaItem {
+    private fun item(
+        id: String,
+        contentUri: String,
+        sizeBytes: Long = 1_000L,
+        dateTakenMillis: Long = id.toLong(),
+    ): MediaItem {
         return MediaItem(
             id = id,
             displayName = "$id.jpg",
-            sizeBytes = 1_000L,
-            dateTakenMillis = id.toLong(),
+            sizeBytes = sizeBytes,
+            dateTakenMillis = dateTakenMillis,
             contentHash = "same",
             mediaType = MediaType.Image,
             contentUri = contentUri,

@@ -7,6 +7,35 @@ enum class SimilarScreenshotReviewStatus {
     Fresh,
 }
 
+internal data class SimilarScreenshotReviewActionState(
+    val title: String,
+    val message: String,
+    val actionLabel: String,
+    val actionEnabled: Boolean,
+)
+
+internal fun SimilarScreenshotReviewStatus.reviewActionState(
+    hasGroups: Boolean,
+): SimilarScreenshotReviewActionState? {
+    if (!hasGroups) return null
+    return when (this) {
+        SimilarScreenshotReviewStatus.CachedRefreshing -> SimilarScreenshotReviewActionState(
+            title = "Refreshing results",
+            message = "Saved groups stay visible while we check your latest screenshots.",
+            actionLabel = "Refreshing",
+            actionEnabled = false,
+        )
+        SimilarScreenshotReviewStatus.Fresh -> SimilarScreenshotReviewActionState(
+            title = "Took new screenshots?",
+            message = "Scan again before deleting to include the latest captures.",
+            actionLabel = "Scan again",
+            actionEnabled = true,
+        )
+        SimilarScreenshotReviewStatus.Loading,
+        SimilarScreenshotReviewStatus.FilteredCacheEmpty -> null
+    }
+}
+
 internal fun SimilarScreenshotReviewStatus.noticeTitle(): String? {
     return when (this) {
         SimilarScreenshotReviewStatus.CachedRefreshing -> "Showing saved results"

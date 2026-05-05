@@ -1,6 +1,7 @@
 package com.air.cleaner.feature.photos
 
 import com.air.cleaner.domain.cleaning.DuplicateGroup
+import kotlin.math.roundToInt
 
 data class PhotoPostDeleteStatus(
     val title: String,
@@ -51,6 +52,7 @@ data class PhotoPostDeleteStatus(
             val baseMetrics = listOf(
                 PhotoPostDeleteMetric("Requested", requestedItemCount.toString()),
                 PhotoPostDeleteMetric("Deleted", resolvedItemCount.toString()),
+                PhotoPostDeleteMetric("Freed", formatDeletedBytes(requestedBytes)),
                 PhotoPostDeleteMetric("Still exists", stillExistsCount.toString()),
                 PhotoPostDeleteMetric(
                     "Remaining duplicates",
@@ -68,6 +70,15 @@ data class PhotoPostDeleteStatus(
 
         private fun photoNoun(count: Int): String {
             return if (count == 1) "photo" else "photos"
+        }
+
+        private fun formatDeletedBytes(bytes: Long): String {
+            if (bytes <= 0L) return "0 MB"
+            val kilobytes = bytes / 1024.0
+            if (kilobytes < 1024.0) return "${kilobytes.roundToInt()} KB"
+            val megabytes = kilobytes / 1024.0
+            if (megabytes < 1024.0) return "${megabytes.roundToInt()} MB"
+            return String.format("%.1f GB", megabytes / 1024.0)
         }
 
         fun from(
