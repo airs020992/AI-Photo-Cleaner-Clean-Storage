@@ -34,7 +34,7 @@ Package: com.aiphotoclear.storagecleaner
 
 ## Required Store/Compliance Assets
 
-- Privacy policy URL.
+- Privacy policy URL: `https://airs020992.github.io/AI-Photo-Cleaner-Clean-Storage/privacy-policy.html`
 - App icon.
 - Feature graphic.
 - Phone screenshots.
@@ -54,4 +54,3 @@ Package: com.aiphotoclear.storagecleaner
 - Large videos review opens and shows candidate files when videos exist.
 - Similar photos review opens and does not look frozen during scan.
 - No crash appears in Android logcat during startup and the first two review flows.
-

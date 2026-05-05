@@ -39,8 +39,7 @@ photo cleaner, storage cleaner, video cleaner, duplicate photo finder, similar p
 
 ## Notes Before Public Release
 
-- Replace any placeholder support email in the privacy policy.
+- Privacy policy URL: `https://airs020992.github.io/AI-Photo-Cleaner-Clean-Storage/privacy-policy.html`.
 - Confirm final screenshots come from the release candidate or Play internal test build.
 - Avoid claiming automatic deletion or cloud backup unless implemented.
 - Avoid "AI deletes" messaging; the safer positioning is "AI-assisted review" and "user-confirmed cleanup".
-

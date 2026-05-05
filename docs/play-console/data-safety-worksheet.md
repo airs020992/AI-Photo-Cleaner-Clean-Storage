@@ -50,6 +50,5 @@ AI Photo Cleaner processes the user's on-device media library to find storage cl
 ## Open Decisions Before Public Release
 
 1. Decide whether Firebase Analytics is opt-in, opt-out, or disabled until consent.
-2. Publish a privacy policy URL that matches the final analytics behavior.
+2. Use the published privacy policy URL in Play Console: `https://airs020992.github.io/AI-Photo-Cleaner-Clean-Storage/privacy-policy.html`.
 3. Confirm whether ads and billing SDKs are enabled in production; update Data safety if they collect identifiers or diagnostics.
-
