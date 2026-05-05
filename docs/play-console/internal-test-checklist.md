@@ -29,8 +29,9 @@ Package: com.aiphotoclear.storagecleaner
 3. Upload `app-release.aab`.
 4. Add release notes from `docs/play-console/internal-test-release-notes.md`.
 5. Add internal testers.
-6. Complete required app content sections if Play blocks rollout.
+6. Complete required app content sections using `docs/play-console/play-console-form-answers.md`.
 7. Roll out to internal testing.
+8. Validate the Play-distributed build using `docs/play-console/internal-test-validation.md`.
 
 ## Required Store/Compliance Assets
 
@@ -44,6 +45,7 @@ Package: com.aiphotoclear.storagecleaner
 - Content rating questionnaire.
 - Target audience and content settings.
 - Ads declaration.
+- Play Console form answer source: `docs/play-console/play-console-form-answers.md`
 
 ## Internal Test Acceptance Criteria
 

@@ -4,7 +4,7 @@ Last updated: 2026-05-06
 App: AI Photo Cleaner
 Package: com.aiphotoclear.storagecleaner
 
-This worksheet is a product and engineering source of truth for filling Google Play Data safety. It must be reviewed before public release.
+This worksheet is a product and engineering source of truth for filling Google Play Data safety. Concrete first-pass form answers are in `docs/play-console/play-console-form-answers.md`. It must be reviewed before public release.
 
 ## Data Collection Summary
 
