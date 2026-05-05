@@ -7,6 +7,7 @@ Package: com.aiphotoclear.storagecleaner
 ## Build Candidate
 
 - AAB: `app/build/outputs/bundle/release/app-release.aab`
+- Upload manifest: `docs/play-console/release-upload-manifest.md`
 - Version name: `0.1.0`
 - Version code: `1`
 - Package name: `com.aiphotoclear.storagecleaner`
@@ -26,7 +27,7 @@ Package: com.aiphotoclear.storagecleaner
 
 1. Open Testing > Internal testing.
 2. Create a new release.
-3. Upload `app-release.aab`.
+3. Upload `app-release.aab` and verify its SHA256 against `docs/play-console/release-upload-manifest.md`.
 4. Add release notes from `docs/play-console/internal-test-release-notes.md`.
 5. Add internal testers.
 6. Complete required app content sections using `docs/play-console/play-console-form-answers.md`.
