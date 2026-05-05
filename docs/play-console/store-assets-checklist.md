@@ -12,8 +12,8 @@ App: AI Photo Cleaner
 
 ## Required Graphics
 
-- App icon: required before public listing.
-- Feature graphic: required before public listing.
+- App icon: candidate available at `docs/play-console/assets/app-icon-512.png`.
+- Feature graphic: candidate available at `docs/play-console/assets/feature-graphic-1024x500.png`.
 - Phone screenshots: at least 2, recommended 4-6.
 - Tablet screenshots: optional unless targeting tablets explicitly.
 
@@ -37,4 +37,3 @@ Recommended final order:
 - Do not show private user media unless staged test media is safe to publish.
 - Prefer storage outcome language: space, review, keep, remove, confirm.
 - Avoid aggressive claims like "delete all duplicates automatically".
-
